@@ -7,6 +7,7 @@ import {
   Edit3,
   Trash2,
   PieChart,
+  Bell,
 } from 'lucide-react';
 import {
   calculateStreak,
@@ -17,6 +18,7 @@ import {
   CATEGORY_COLORS,
   DEFAULT_CATEGORY_COLOR,
 } from '../utils/habitUtils';
+import { formatTime12Hour } from '../utils/notificationUtils';
 
 const HabitCard = ({
   habit,
@@ -104,6 +106,17 @@ const HabitCard = ({
               {isSkippedToday && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/25 flex items-center gap-1 font-medium">
                   <Pause className="w-3 h-3" /> Rest Day
+                </span>
+              )}
+
+              {/* Scheduled Reminder Badge */}
+              {habit.reminderEnabled && habit.reminderTime && (
+                <span
+                  className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1 font-medium"
+                  title={`Daily reminder scheduled at ${formatTime12Hour(habit.reminderTime)}`}
+                >
+                  <Bell className="w-3 h-3 text-amber-400" />
+                  <span>{formatTime12Hour(habit.reminderTime)}</span>
                 </span>
               )}
             </div>

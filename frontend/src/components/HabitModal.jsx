@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { Sparkles, X, AlertCircle, RefreshCw, Bell, Clock } from 'lucide-react';
+import {
+  requestNotificationPermission,
+  sendDesktopNotification,
+} from '../utils/notificationUtils';
 
 const HabitModal = ({
   isOpen,
@@ -16,6 +20,8 @@ const HabitModal = ({
     frequency: 'daily',
     color: 'indigo',
     targetDays: 7,
+    reminderEnabled: false,
+    reminderTime: '09:00',
   });
 
   useEffect(() => {
@@ -27,6 +33,8 @@ const HabitModal = ({
         frequency: initialData.frequency || 'daily',
         color: initialData.color || 'indigo',
         targetDays: initialData.targetDays || 7,
+        reminderEnabled: Boolean(initialData.reminderEnabled),
+        reminderTime: initialData.reminderTime || '09:00',
       });
     } else {
       setFormData({
@@ -36,6 +44,8 @@ const HabitModal = ({
         frequency: 'daily',
         color: 'indigo',
         targetDays: 7,
+        reminderEnabled: false,
+        reminderTime: '09:00',
       });
     }
   }, [initialData, isOpen]);
@@ -152,6 +162,87 @@ const HabitModal = ({
                 <option value="weekly">Weekly</option>
               </select>
             </div>
+          </div>
+
+          {/* Daily Reminder Settings Section */}
+          <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    formData.reminderEnabled
+                      ? 'bg-amber-500/20 text-amber-400'
+                      : 'bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-200 block">
+                    Daily Task Reminder
+                  </label>
+                  <p className="text-[11px] text-slate-400">
+                    Get desktop and in-app notifications at your set time
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const nextVal = !formData.reminderEnabled;
+                  setFormData((prev) => ({ ...prev, reminderEnabled: nextVal }));
+                  if (nextVal) {
+                    await requestNotificationPermission();
+                  }
+                }}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                  formData.reminderEnabled
+                    ? 'bg-indigo-600 justify-end'
+                    : 'bg-slate-800 justify-start'
+                }`}
+              >
+                <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+              </button>
+            </div>
+
+            {/* Time Picker & Test Alert (Shown when enabled) */}
+            {formData.reminderEnabled && (
+              <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs text-slate-300 font-medium">
+                    Reminder Time:
+                  </span>
+                  <input
+                    type="time"
+                    value={formData.reminderTime || '09:00'}
+                    onChange={(e) =>
+                      setFormData({ ...formData, reminderTime: e.target.value })
+                    }
+                    className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await requestNotificationPermission();
+                    sendDesktopNotification(
+                      `Reminder: ${formData.title || 'Your Habit'}`,
+                      {
+                        body: `Scheduled for ${formData.reminderTime || '09:00'}. Notification test successful!`,
+                      }
+                    );
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer self-start sm:self-auto"
+                >
+                  <Bell className="w-3 h-3" />
+                  <span>Test Alert</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Modal Actions */}

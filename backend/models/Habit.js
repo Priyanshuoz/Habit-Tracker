@@ -55,6 +55,14 @@ const habitSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    reminderEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    reminderTime: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

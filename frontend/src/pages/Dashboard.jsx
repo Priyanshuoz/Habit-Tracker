@@ -12,6 +12,7 @@ import {
   Layers,
   Zap,
   Award,
+  Quote,
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
@@ -22,6 +23,7 @@ import HabitCard from '../components/HabitCard';
 import HabitModal from '../components/HabitModal';
 import HabitDetailModal from '../components/HabitDetailModal';
 import ConnectionBanner from '../components/ConnectionBanner';
+import NotificationToast from '../components/NotificationToast';
 
 import { habitApi } from '../services/habitApi';
 import {
@@ -32,6 +34,11 @@ import {
   isDateSkipped,
   CATEGORIES,
 } from '../utils/habitUtils';
+import { getDailyQuote } from '../utils/quoteUtils';
+import {
+  sendDesktopNotification,
+  formatTime12Hour,
+} from '../utils/notificationUtils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -86,6 +93,73 @@ const Dashboard = () => {
   // Date constants
   const past7Days = useMemo(() => getPastNDays(7), []);
   const todayStr = useMemo(() => getLocalDateString(new Date()), []);
+
+  // Daily Motivational Quote (automatically rotates with calendar date)
+  const dailyQuote = useMemo(() => getDailyQuote(new Date()), []);
+
+  // Active Reminder In-App Notification Toast
+  const [activeNotification, setActiveNotification] = useState(null);
+
+  // Background reminder scheduler effect: checks active habit reminders every 25 seconds
+  useEffect(() => {
+    const checkScheduledReminders = () => {
+      const now = new Date();
+      const currentHours = String(now.getHours()).padStart(2, '0');
+      const currentMins = String(now.getMinutes()).padStart(2, '0');
+      const currentHHMM = `${currentHours}:${currentMins}`;
+
+      habits.forEach((habit) => {
+        if (!habit.reminderEnabled || !habit.reminderTime) return;
+
+        if (habit.reminderTime === currentHHMM) {
+          const habitKey = `${habit._id || habit.id}_${todayStr}`;
+          let notifiedCache = {};
+          try {
+            notifiedCache = JSON.parse(
+              localStorage.getItem('habit_tracker_notified_reminders') || '{}'
+            );
+          } catch {
+            notifiedCache = {};
+          }
+
+          if (notifiedCache[habitKey]) return; // Already reminded today
+
+          // Don't remind if already completed or resting today
+          const isDone = isDateCompleted(habit, todayStr);
+          const isRest = isDateSkipped(habit, todayStr);
+          if (isDone || isRest) return;
+
+          // Mark reminded for today
+          notifiedCache[habitKey] = true;
+          localStorage.setItem(
+            'habit_tracker_notified_reminders',
+            JSON.stringify(notifiedCache)
+          );
+
+          // 1. Fire Browser Desktop Notification
+          sendDesktopNotification(`Habit Reminder: ${habit.title}`, {
+            body:
+              habit.description ||
+              `It's ${formatTime12Hour(habit.reminderTime)}! Time to check in.`,
+          });
+
+          // 2. Fire In-App Toast
+          setActiveNotification({
+            habit,
+            habitTitle: habit.title,
+            time: formatTime12Hour(habit.reminderTime),
+            message:
+              habit.description ||
+              'Time to stay consistent and complete your scheduled habit!',
+          });
+        }
+      });
+    };
+
+    checkScheduledReminders();
+    const intervalId = setInterval(checkScheduledReminders, 25000);
+    return () => clearInterval(intervalId);
+  }, [habits, todayStr]);
 
   // Fetch habits from backend API
   const fetchHabits = useCallback(async () => {
@@ -392,6 +466,34 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Daily Motivational Quote */}
+        {dailyQuote && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900/80 via-slate-900/60 to-indigo-950/40 border border-slate-800/80 backdrop-blur-xl relative overflow-hidden group">
+            <div className="flex items-start gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 shadow-inner">
+                <Quote className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                    Daily Wisdom
+                  </span>
+                  <span className="text-xs text-slate-500">•</span>
+                  <span className="text-xs text-slate-400 font-medium">
+                    {dailyQuote.tag}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-medium text-slate-200 italic leading-snug">
+                  "{dailyQuote.quote}"
+                </p>
+                <p className="text-xs font-semibold text-slate-400 mt-1.5">
+                  — {dailyQuote.author}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 4 Modular KPI Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
@@ -528,6 +630,15 @@ const Dashboard = () => {
         onClose={() => setSelectedDetailHabit(null)}
         habit={activeDetailHabit}
         todayStr={todayStr}
+      />
+
+      {/* Floating In-App Reminder Toast */}
+      <NotificationToast
+        notification={activeNotification}
+        onClose={() => setActiveNotification(null)}
+        onMarkDone={(habit) => {
+          handleToggleDate(habit, todayStr, 'completed');
+        }}
       />
     </div>
   );

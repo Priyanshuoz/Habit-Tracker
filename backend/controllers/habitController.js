@@ -92,7 +92,16 @@ const getHabits = async (req, res) => {
 // @access  Private
 const createHabit = async (req, res) => {
   try {
-    const { title, description, category, frequency, color, targetDays } = req.body;
+    const {
+      title,
+      description,
+      category,
+      frequency,
+      color,
+      targetDays,
+      reminderEnabled,
+      reminderTime,
+    } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Please provide a habit title' });
@@ -110,6 +119,8 @@ const createHabit = async (req, res) => {
       skippedDates: [],
       currentStreak: 0,
       longestStreak: 0,
+      reminderEnabled: Boolean(reminderEnabled),
+      reminderTime: reminderTime || '',
     });
 
     res.status(201).json(habit);
@@ -135,7 +146,16 @@ const updateHabit = async (req, res) => {
       return res.status(401).json({ message: 'User not authorized to update this habit' });
     }
 
-    const { title, description, category, frequency, color, targetDays } = req.body;
+    const {
+      title,
+      description,
+      category,
+      frequency,
+      color,
+      targetDays,
+      reminderEnabled,
+      reminderTime,
+    } = req.body;
 
     habit.title = title !== undefined ? title : habit.title;
     habit.description = description !== undefined ? description : habit.description;
@@ -143,6 +163,8 @@ const updateHabit = async (req, res) => {
     habit.frequency = frequency !== undefined ? frequency : habit.frequency;
     habit.color = color !== undefined ? color : habit.color;
     habit.targetDays = targetDays !== undefined ? targetDays : habit.targetDays;
+    if (reminderEnabled !== undefined) habit.reminderEnabled = Boolean(reminderEnabled);
+    if (reminderTime !== undefined) habit.reminderTime = reminderTime;
 
     const updatedHabit = await habit.save();
     res.json(updatedHabit);
