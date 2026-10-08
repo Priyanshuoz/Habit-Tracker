@@ -20,6 +20,7 @@ import AnalyticsChart from '../components/AnalyticsChart';
 import HabitFilterBar from '../components/HabitFilterBar';
 import HabitCard from '../components/HabitCard';
 import HabitModal from '../components/HabitModal';
+import HabitDetailModal from '../components/HabitDetailModal';
 import ConnectionBanner from '../components/ConnectionBanner';
 
 import { habitApi } from '../services/habitApi';
@@ -61,6 +62,18 @@ const Dashboard = () => {
   const [editingHabit, setEditingHabit] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Habit Detail Analytics Modal State
+  const [selectedDetailHabit, setSelectedDetailHabit] = useState(null);
+
+  // Keep selected detail habit in sync with habit updates
+  const activeDetailHabit = useMemo(() => {
+    if (!selectedDetailHabit) return null;
+    const found = habits.find(
+      (h) => (h._id || h.id) === (selectedDetailHabit._id || selectedDetailHabit.id)
+    );
+    return found || selectedDetailHabit;
+  }, [habits, selectedDetailHabit]);
 
   // Authentication protection
   useEffect(() => {
@@ -491,6 +504,7 @@ const Dashboard = () => {
                   onToggleDate={handleToggleDate}
                   onEdit={handleOpenModal}
                   onDelete={handleDeleteHabit}
+                  onViewDetails={setSelectedDetailHabit}
                 />
               ))}
             </div>
@@ -506,6 +520,14 @@ const Dashboard = () => {
         initialData={editingHabit}
         isSaving={isSaving}
         formError={formError}
+      />
+
+      {/* Habit Routine Detail & Pie Chart Modal */}
+      <HabitDetailModal
+        isOpen={Boolean(selectedDetailHabit)}
+        onClose={() => setSelectedDetailHabit(null)}
+        habit={activeDetailHabit}
+        todayStr={todayStr}
       />
     </div>
   );

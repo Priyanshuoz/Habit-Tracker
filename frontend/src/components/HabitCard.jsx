@@ -6,6 +6,7 @@ import {
   Pause,
   Edit3,
   Trash2,
+  PieChart,
 } from 'lucide-react';
 import {
   calculateStreak,
@@ -24,6 +25,7 @@ const HabitCard = ({
   onToggleDate,
   onEdit,
   onDelete,
+  onViewDetails,
 }) => {
   const habitId = habit._id || habit.id;
   const streak = calculateStreak(habit.completedDates, habit.skippedDates);
@@ -72,10 +74,14 @@ const HabitCard = ({
             )}
           </button>
 
-          <div>
+          <div
+            onClick={() => onViewDetails && onViewDetails(habit)}
+            className="cursor-pointer group/title flex-1"
+            title="Click to view routine analytics and rest days"
+          >
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3
-                className={`text-base font-bold transition-colors ${
+                className={`text-base font-bold transition-colors group-hover/title:text-indigo-300 ${
                   isCompletedToday ? 'text-emerald-300' : 'text-white'
                 }`}
               >
@@ -196,8 +202,15 @@ const HabitCard = ({
             })}
           </div>
 
-          {/* Edit and Delete Actions */}
+          {/* Analytics, Edit, and Delete Actions */}
           <div className="flex items-center gap-1 pl-2 border-l border-slate-800/80">
+            <button
+              onClick={() => onViewDetails && onViewDetails(habit)}
+              title="View routine pie chart analytics & rest days"
+              className="p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80 transition-colors cursor-pointer"
+            >
+              <PieChart className="w-4 h-4" />
+            </button>
             <button
               onClick={() => onEdit(habit)}
               title="Edit habit"
