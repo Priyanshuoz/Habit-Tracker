@@ -34,7 +34,6 @@ const ProfileVaultModal = ({
   // Profile Edit State
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('');
-  const [sampleCategory, setSampleCategory] = useState('All');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
@@ -470,33 +469,18 @@ const ProfileVaultModal = ({
 
               {/* Sample Avatars Selector */}
               <div className="space-y-3 p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center justify-between">
                   <p className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Or choose a sample avatar:</span>
+                    <span>Or pick a sample avatar:</span>
                   </p>
-                  
-                  {/* Category Pills */}
-                  <div className="flex items-center gap-1">
-                    {['All', 'Cartoonish', 'Motivational', 'Rage Mode'].map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setSampleCategory(cat)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                          sampleCategory === cat
-                            ? 'bg-indigo-600 text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
+                  <span className="text-[11px] text-slate-500">
+                    {SAMPLE_AVATARS.length} avatars available
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2.5 pt-1">
-                  {SAMPLE_AVATARS.filter((s) => sampleCategory === 'All' || s.category === sampleCategory).map((item) => (
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5 pt-1 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                  {SAMPLE_AVATARS.map((item) => (
                     <button
                       key={item.id}
                       type="button"
