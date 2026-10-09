@@ -20,7 +20,7 @@ import StatCard from '../components/StatCard';
 import AnalyticsChart from '../components/AnalyticsChart';
 import HabitFilterBar from '../components/HabitFilterBar';
 import HabitCard from '../components/HabitCard';
-import HabitModal from '../components/HabitModal';
+import HabitModal, { HABIT_TEMPLATES } from '../components/HabitModal';
 import HabitDetailModal from '../components/HabitDetailModal';
 import ConnectionBanner from '../components/ConnectionBanner';
 import NotificationToast from '../components/NotificationToast';
@@ -278,7 +278,8 @@ const Dashboard = () => {
     setFormError('');
 
     try {
-      if (editingHabit) {
+      const isTemplate = editingHabit && editingHabit.id && String(editingHabit.id).startsWith('tmpl_');
+      if (editingHabit && !isTemplate) {
         const habitId = editingHabit._id || editingHabit.id;
         const updated = await habitApi.update(habitId, formData);
         setHabits((prev) =>
@@ -715,13 +716,43 @@ const Dashboard = () => {
                   ? 'No habits match your active filters. Try adjusting your search query or category.'
                   : 'Start building consistency today by creating your first daily or weekly habit.'}
               </p>
-              <button
-                onClick={() => handleOpenModal()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Your First Habit</span>
-              </button>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => handleOpenModal()}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Your First Habit</span>
+                </button>
+              </div>
+
+              {/* Starter Templates in Empty State */}
+              <div className="mt-8 pt-6 border-t border-slate-800/80 max-w-lg mx-auto text-left">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-3 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Popular Starter Templates:</span>
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {HABIT_TEMPLATES.map((tmpl) => (
+                    <button
+                      key={tmpl.id}
+                      type="button"
+                      onClick={() => handleOpenModal(tmpl)}
+                      className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/80 transition-all text-left flex items-start gap-2.5 cursor-pointer group"
+                    >
+                      <span className="text-xl shrink-0 mt-0.5">{tmpl.icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white group-hover:text-indigo-300 truncate">
+                          {tmpl.title}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {tmpl.category} • {tmpl.targetDays} days/wk
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             /* Modular Habit Cards List */

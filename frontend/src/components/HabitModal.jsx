@@ -5,6 +5,57 @@ import {
   sendDesktopNotification,
 } from '../utils/notificationUtils';
 
+export const HABIT_TEMPLATES = [
+  {
+    id: 'tmpl_water',
+    title: 'Drink 3 Liters of Water',
+    description: 'Keep a water bottle nearby and stay thoroughly hydrated across the day.',
+    category: 'Health',
+    frequency: 'daily',
+    color: 'cyan',
+    targetDays: 7,
+    reminderEnabled: true,
+    reminderTime: '09:00',
+    icon: '💧',
+  },
+  {
+    id: 'tmpl_workout',
+    title: '30 Min Morning Workout',
+    description: 'Calisthenics, gym session, or brisk jog to elevate daily energy levels.',
+    category: 'Fitness',
+    frequency: 'daily',
+    color: 'emerald',
+    targetDays: 6,
+    reminderEnabled: true,
+    reminderTime: '07:30',
+    icon: '🏃',
+  },
+  {
+    id: 'tmpl_reading',
+    title: 'Read 15 Pages of a Book',
+    description: 'Dedicated offline reading to sharpen focus and expand knowledge.',
+    category: 'Learning',
+    frequency: 'daily',
+    color: 'indigo',
+    targetDays: 7,
+    reminderEnabled: true,
+    reminderTime: '21:30',
+    icon: '📖',
+  },
+  {
+    id: 'tmpl_meditation',
+    title: '10 Min Evening Meditation',
+    description: 'Breathwork, calm reflection, and mental reset before sleep.',
+    category: 'Mindfulness',
+    frequency: 'daily',
+    color: 'purple',
+    targetDays: 7,
+    reminderEnabled: true,
+    reminderTime: '22:00',
+    icon: '🧘',
+  },
+];
+
 const HabitModal = ({
   isOpen,
   onClose,
@@ -93,6 +144,51 @@ const HabitModal = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Starter Habit Templates (only for new habits) */}
+          {!initialData && (
+            <div className="space-y-2 pb-1">
+              <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Or pick a starter template:</span>
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {HABIT_TEMPLATES.map((tmpl) => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        title: tmpl.title,
+                        description: tmpl.description,
+                        category: tmpl.category,
+                        frequency: tmpl.frequency,
+                        color: tmpl.color,
+                        targetDays: tmpl.targetDays,
+                        reminderEnabled: tmpl.reminderEnabled,
+                        reminderTime: tmpl.reminderTime,
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-start gap-2.5 ${
+                      formData.title === tmpl.title
+                        ? 'bg-indigo-950/70 border-indigo-500 ring-1 ring-indigo-500/50'
+                        : 'bg-slate-950/70 border-slate-800 hover:border-slate-700 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <span className="text-lg shrink-0 mt-0.5">{tmpl.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white group-hover:text-indigo-300 truncate">
+                        {tmpl.title}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {tmpl.category} • {tmpl.targetDays}d/wk
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Title */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
