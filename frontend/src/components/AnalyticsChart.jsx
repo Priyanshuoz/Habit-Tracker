@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Award,
   Sparkles,
-  PieChart as PieChartIcon,
   CheckCircle2,
   Pause,
   AlertCircle,
@@ -15,7 +14,6 @@ import {
   Check,
   Flame,
   ArrowUpRight,
-  Layers,
   Clock,
   RotateCcw,
 } from 'lucide-react';
@@ -23,11 +21,6 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -67,9 +60,6 @@ const AnalyticsChart = ({
 }) => {
   // Timeframe Mode: 'weekly' | 'monthly'
   const [timeframe, setTimeframe] = useState('weekly');
-
-  // Chart view tab: 'trend' | 'distribution' | 'category'
-  const [activeChartTab, setActiveChartTab] = useState('trend');
 
   // Offset navigation: 0 = current, -1 = previous, etc.
   const [weekOffset, setWeekOffset] = useState(0);
@@ -600,49 +590,14 @@ ${analyzedData.habitScores
         </div>
       </div>
 
-      {/* 3. Visual Charts Section with Tabs */}
-      <div className="space-y-4">
-        {/* Chart View Tabs */}
+      {/* 3. Visual Completion Trend Chart */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
-            <button
-              type="button"
-              onClick={() => setActiveChartTab('trend')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeChartTab === 'trend'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span>Completion Trend ({timeframe === 'weekly' ? 'Daily' : 'Weekly'})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveChartTab('distribution')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeChartTab === 'distribution'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <PieChartIcon className="w-3.5 h-3.5" />
-              <span>Status Distribution</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveChartTab('category')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeChartTab === 'category'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Category Breakdown</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-sm font-bold text-white">
+              Completion Trend ({timeframe === 'weekly' ? 'Daily' : 'Weekly'})
+            </h3>
           </div>
 
           <span className="text-[11px] text-slate-400">
@@ -650,232 +605,85 @@ ${analyzedData.habitScores
           </span>
         </div>
 
-        {/* TAB 1: Trend Curved Area Chart */}
-        {activeChartTab === 'trend' && (
-          <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80">
-            <div className="w-full h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={
-                    timeframe === 'weekly'
-                      ? analyzedData.dailyBreakdown
-                      : analyzedData.monthlyWeeklyBlocks
-                  }
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="habitGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.45} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
-                    </linearGradient>
-                    <linearGradient id="restGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.25} />
-                  <XAxis
-                    dataKey="label"
-                    stroke="#94a3b8"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={{ stroke: '#334155' }}
-                  />
-                  <YAxis
-                    stroke="#94a3b8"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={{ stroke: '#334155' }}
-                    allowDecimals={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '12px',
-                      color: '#f8fafc',
-                      fontSize: '12px',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-                    }}
-                    itemStyle={{ fontWeight: 600 }}
-                  />
-                  <Legend
-                    verticalAlign="top"
-                    align="right"
-                    wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="completed"
-                    name="Habits Completed"
-                    stroke="#6366f1"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#habitGradient)"
-                    dot={{ r: 4, fill: '#6366f1', strokeWidth: 1.5, stroke: '#ffffff' }}
-                    activeDot={{ r: 6, fill: '#818cf8', stroke: '#ffffff', strokeWidth: 2 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="rest"
-                    name="Rest Days"
-                    stroke="#0ea5e9"
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
-                    fillOpacity={1}
-                    fill="url(#restGradient)"
-                    dot={{ r: 3, fill: '#0ea5e9', strokeWidth: 1, stroke: '#ffffff' }}
-                    activeDot={{ r: 5, fill: '#38bdf8', stroke: '#ffffff', strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+          <div className="w-full h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={
+                  timeframe === 'weekly'
+                    ? analyzedData.dailyBreakdown
+                    : analyzedData.monthlyWeeklyBlocks
+                }
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="habitGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.45} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="restGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.25} />
+                <XAxis
+                  dataKey="label"
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#334155' }}
+                />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#334155' }}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderRadius: '12px',
+                    color: '#f8fafc',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                  }}
+                  itemStyle={{ fontWeight: 600 }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="completed"
+                  name="Habits Completed"
+                  stroke="#6366f1"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#habitGradient)"
+                  dot={{ r: 4, fill: '#6366f1', strokeWidth: 1.5, stroke: '#ffffff' }}
+                  activeDot={{ r: 6, fill: '#818cf8', stroke: '#ffffff', strokeWidth: 2 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="rest"
+                  name="Rest Days"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  fillOpacity={1}
+                  fill="url(#restGradient)"
+                  dot={{ r: 3, fill: '#0ea5e9', strokeWidth: 1, stroke: '#ffffff' }}
+                  activeDot={{ r: 5, fill: '#38bdf8', stroke: '#ffffff', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        )}
-
-        {/* TAB 2: Period Distribution Pie Chart */}
-        {activeChartTab === 'distribution' && (
-          <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            <div className="md:col-span-7 h-72 relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={analyzedData.pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={65}
-                    outerRadius={95}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {analyzedData.pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '12px',
-                      color: '#f8fafc',
-                      fontSize: '12px',
-                    }}
-                    itemStyle={{ fontWeight: 600 }}
-                  />
-                  <Legend
-                    verticalAlign="bottom"
-                    iconType="circle"
-                    wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-
-              {/* Center Adherence Percentage */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
-                <span className="text-3xl font-black text-white">
-                  {analyzedData.adherenceRate}%
-                </span>
-                <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
-                  Period Adherence
-                </span>
-              </div>
-            </div>
-
-            {/* Right Indicators */}
-            <div className="md:col-span-5 space-y-3">
-              <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
-                  <span className="text-xs text-slate-300 font-medium">Completed Checks</span>
-                </div>
-                <span className="text-sm font-bold text-white">
-                  {analyzedData.totalCompleted}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50" />
-                  <span className="text-xs text-slate-300 font-medium">Scheduled Rest</span>
-                </div>
-                <span className="text-sm font-bold text-white">
-                  {analyzedData.totalRest}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
-                  <span className="text-xs text-slate-300 font-medium">Missed Days</span>
-                </div>
-                <span className="text-sm font-bold text-white">
-                  {analyzedData.totalMissed}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-slate-500" />
-                  <span className="text-xs text-slate-300 font-medium">Pending (Today / Ahead)</span>
-                </div>
-                <span className="text-sm font-bold text-white">
-                  {analyzedData.totalPending}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: Category Performance */}
-        {activeChartTab === 'category' && (
-          <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80">
-            {analyzedData.categoryData.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-10">No categories found.</p>
-            ) : (
-              <div className="w-full h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={analyzedData.categoryData}
-                    layout="vertical"
-                    margin={{ top: 10, right: 30, left: 30, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.25} />
-                    <XAxis
-                      type="number"
-                      domain={[0, 100]}
-                      stroke="#94a3b8"
-                      fontSize={11}
-                      tickFormatter={(val) => `${val}%`}
-                    />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      stroke="#94a3b8"
-                      fontSize={11}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#0f172a',
-                        borderColor: '#334155',
-                        borderRadius: '12px',
-                        color: '#f8fafc',
-                        fontSize: '12px',
-                      }}
-                      formatter={(value) => [`${value}% Completion`, 'Adherence']}
-                    />
-                    <Bar
-                      dataKey="rate"
-                      name="Adherence Rate"
-                      fill="#6366f1"
-                      radius={[0, 6, 6, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        )}
+        </div>
       </div>
 
       {/* 4. Habit-by-Habit Detailed Scorecard Matrix */}
