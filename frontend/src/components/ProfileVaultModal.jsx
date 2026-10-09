@@ -198,9 +198,14 @@ const ProfileVaultModal = ({
     e.preventDefault();
     setVaultError('');
 
+    if (pinInput.length !== 4) {
+      setVaultError('PIN must be exactly 4 digits');
+      return;
+    }
+
     if (isSettingNewPin) {
-      if (pinInput.length < 4) {
-        setVaultError('PIN must be at least 4 digits');
+      if (confirmPinInput.length !== 4) {
+        setVaultError('Please confirm your 4-digit PIN');
         return;
       }
       if (pinInput !== confirmPinInput) {
@@ -217,11 +222,6 @@ const ProfileVaultModal = ({
         setVaultError(err.message || 'Error configuring PIN');
       }
     } else {
-      if (!pinInput) {
-        setVaultError('Please enter your PIN');
-        return;
-      }
-
       try {
         await vaultApi.verifyOrSetPin(pinInput, 'unlock');
         setIsUnlocked(true);
@@ -429,7 +429,7 @@ const ProfileVaultModal = ({
                   
                   {/* Category Pills */}
                   <div className="flex items-center gap-1">
-                    {['All', 'Illustrated', 'Fitness', 'Portraits'].map((cat) => (
+                    {['All', 'Cartoonish', 'Rage Mode'].map((cat) => (
                       <button
                         key={cat}
                         type="button"
@@ -868,8 +868,8 @@ const ProfileVaultModal = ({
                     </h3>
                     <p className="text-xs text-slate-400 mt-1.5 max-w-sm mx-auto">
                       {isSettingNewPin
-                        ? 'Create a secret 4-6 digit passcode to protect your face & physique progress photos.'
-                        : 'Enter your secret passcode to access your private photos and comparison tool.'}
+                        ? 'Create a secret 4-digit PIN to protect your face & physique progress photos.'
+                        : 'Enter your secret 4-digit PIN to access your private photos and comparison tool.'}
                     </p>
                   </div>
 
@@ -882,37 +882,43 @@ const ProfileVaultModal = ({
 
                   <form onSubmit={handlePinSubmit} className="space-y-4">
                     <div>
+                      <label className="block text-xs text-slate-400 mb-1">Enter 4-Digit PIN:</label>
                       <input
                         type="password"
-                        maxLength="8"
+                        maxLength="4"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         autoFocus
                         placeholder="••••"
                         value={pinInput}
-                        onChange={(e) => setPinInput(e.target.value)}
-                        className="w-48 text-center tracking-[0.5em] text-2xl font-bold bg-slate-950 border border-slate-800 rounded-2xl py-3 text-white focus:outline-none focus:border-emerald-500 transition-all mx-auto"
+                        onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        className="w-44 text-center tracking-[0.6em] text-3xl font-bold bg-slate-950 border border-slate-800 rounded-2xl py-3 text-white focus:outline-none focus:border-emerald-500 transition-all mx-auto"
                       />
                     </div>
 
                     {isSettingNewPin && (
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">Confirm PIN:</label>
+                        <label className="block text-xs text-slate-400 mb-1">Confirm 4-Digit PIN:</label>
                         <input
                           type="password"
-                          maxLength="8"
+                          maxLength="4"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           placeholder="••••"
                           value={confirmPinInput}
-                          onChange={(e) => setConfirmPinInput(e.target.value)}
-                          className="w-48 text-center tracking-[0.5em] text-2xl font-bold bg-slate-950 border border-slate-800 rounded-2xl py-3 text-white focus:outline-none focus:border-emerald-500 transition-all mx-auto"
+                          onChange={(e) => setConfirmPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                          className="w-44 text-center tracking-[0.6em] text-3xl font-bold bg-slate-950 border border-slate-800 rounded-2xl py-3 text-white focus:outline-none focus:border-emerald-500 transition-all mx-auto"
                         />
                       </div>
                     )}
 
                     <button
                       type="submit"
-                      className="w-full max-w-xs mx-auto py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+                      disabled={pinInput.length !== 4 || (isSettingNewPin && confirmPinInput.length !== 4)}
+                      className="w-full max-w-xs mx-auto py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 text-white font-semibold text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       <KeyRound className="w-4 h-4" />
-                      <span>{isSettingNewPin ? 'Create PIN & Open Vault' : 'Unlock Private Vault'}</span>
+                      <span>{isSettingNewPin ? 'Create 4-Digit PIN & Open Vault' : 'Unlock Private Vault'}</span>
                     </button>
                   </form>
                 </div>

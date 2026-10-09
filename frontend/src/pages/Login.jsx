@@ -326,16 +326,19 @@ const Login = () => {
 
                   {/* Sample Avatars Row */}
                   <div className="w-full mt-3 pt-2.5 border-t border-slate-800/80">
-                    <p className="text-[11px] font-medium text-slate-400 mb-2 text-center">
-                      Or select a sample avatar:
-                    </p>
-                    <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                      {SAMPLE_AVATARS.slice(0, 6).map((item) => (
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-medium text-slate-400">
+                        Or pick a sample avatar:
+                      </span>
+                      <span className="text-[10px] text-slate-500">Cartoonish & Rage</span>
+                    </div>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
+                      {SAMPLE_AVATARS.map((item) => (
                         <button
                           key={item.id}
                           type="button"
                           onClick={() => setFormData((prev) => ({ ...prev, avatar: item.url }))}
-                          title={item.name}
+                          title={`${item.category}: ${item.name}`}
                           className={`w-9 h-9 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 hover:scale-105 ${
                             formData.avatar === item.url
                               ? 'border-indigo-500 ring-2 ring-indigo-500/50 scale-105'

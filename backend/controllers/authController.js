@@ -150,11 +150,13 @@ const handleVaultPin = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Validate PIN is strictly 4 numeric digits
+    if (!pin || !/^\d{4}$/.test(pin.toString())) {
+      return res.status(400).json({ message: 'PIN must be exactly 4 digits (0-9)' });
+    }
+
     // Setting PIN for the first time
     if (!user.vaultPin) {
-      if (!pin || pin.length < 4) {
-        return res.status(400).json({ message: 'PIN must be at least 4 digits' });
-      }
       const salt = await bcrypt.genSalt(10);
       user.vaultPin = await bcrypt.hash(pin.toString(), salt);
       await user.save();
@@ -167,8 +169,8 @@ const handleVaultPin = async (req, res) => {
       if (!isMatch) {
         return res.status(401).json({ message: 'Incorrect current PIN' });
       }
-      if (!newPin || newPin.length < 4) {
-        return res.status(400).json({ message: 'New PIN must be at least 4 digits' });
+      if (!newPin || !/^\d{4}$/.test(newPin.toString())) {
+        return res.status(400).json({ message: 'New PIN must be exactly 4 digits (0-9)' });
       }
       const salt = await bcrypt.genSalt(10);
       user.vaultPin = await bcrypt.hash(newPin.toString(), salt);
