@@ -418,7 +418,18 @@ const Dashboard = () => {
       } else {
         const created = await habitApi.create(formData);
         const newHabit = created.habit || created;
-        setHabits((prev) => [newHabit, ...prev]);
+        const normalizedHabit = {
+          ...newHabit,
+          _id: newHabit._id || newHabit.id,
+          completedDates: Array.isArray(newHabit.completedDates) ? newHabit.completedDates : [],
+          skippedDates: Array.isArray(newHabit.skippedDates) ? newHabit.skippedDates : [],
+          currentStreak: Number(newHabit.currentStreak) || 0,
+          longestStreak: Number(newHabit.longestStreak) || 0,
+          category: newHabit.category || formData.category || 'Productivity',
+          frequency: newHabit.frequency || formData.frequency || 'daily',
+          createdAt: newHabit.createdAt || new Date().toISOString(),
+        };
+        setHabits((prev) => [normalizedHabit, ...prev]);
       }
       handleCloseModal();
     } catch (err) {

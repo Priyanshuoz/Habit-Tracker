@@ -285,7 +285,7 @@ const AnalyticsChart = ({
       }
 
       return {
-        habit,
+        habit: h,
         title: h.title,
         category: h.category || 'Productivity',
         color: h.color || 'indigo',
@@ -626,108 +626,84 @@ ${analyzedData.habitScores
           </span>
         </div>
 
-        {/* TAB 1: Trend Bar / Area Chart */}
+        {/* TAB 1: Trend Curved Area Chart */}
         {activeChartTab === 'trend' && (
           <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80">
             <div className="w-full h-72">
               <ResponsiveContainer width="100%" height="100%">
-                {timeframe === 'weekly' ? (
-                  <BarChart
-                    data={analyzedData.dailyBreakdown}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.25} />
-                    <XAxis
-                      dataKey="label"
-                      stroke="#94a3b8"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={{ stroke: '#334155' }}
-                    />
-                    <YAxis
-                      stroke="#94a3b8"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={{ stroke: '#334155' }}
-                      allowDecimals={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#0f172a',
-                        borderColor: '#334155',
-                        borderRadius: '12px',
-                        color: '#f8fafc',
-                        fontSize: '12px',
-                      }}
-                      itemStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend
-                      verticalAlign="top"
-                      align="right"
-                      wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
-                    />
-                    <Bar
-                      dataKey="completed"
-                      name="Completed Habits"
-                      fill="#10b981"
-                      radius={[6, 6, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="rest"
-                      name="Rest Days"
-                      fill="#6366f1"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                ) : (
-                  <BarChart
-                    data={analyzedData.monthlyWeeklyBlocks}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.25} />
-                    <XAxis
-                      dataKey="label"
-                      stroke="#94a3b8"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={{ stroke: '#334155' }}
-                    />
-                    <YAxis
-                      stroke="#94a3b8"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={{ stroke: '#334155' }}
-                      allowDecimals={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#0f172a',
-                        borderColor: '#334155',
-                        borderRadius: '12px',
-                        color: '#f8fafc',
-                        fontSize: '12px',
-                      }}
-                      itemStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend
-                      verticalAlign="top"
-                      align="right"
-                      wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
-                    />
-                    <Bar
-                      dataKey="completed"
-                      name="Completed Habits"
-                      fill="#10b981"
-                      radius={[6, 6, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="rest"
-                      name="Rest Days"
-                      fill="#6366f1"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                )}
+                <AreaChart
+                  data={
+                    timeframe === 'weekly'
+                      ? analyzedData.dailyBreakdown
+                      : analyzedData.monthlyWeeklyBlocks
+                  }
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="habitGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.45} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="restGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.25} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: '#334155' }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: '#334155' }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      borderColor: '#334155',
+                      borderRadius: '12px',
+                      color: '#f8fafc',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                    }}
+                    itemStyle={{ fontWeight: 600 }}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="completed"
+                    name="Habits Completed"
+                    stroke="#6366f1"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#habitGradient)"
+                    dot={{ r: 4, fill: '#6366f1', strokeWidth: 1.5, stroke: '#ffffff' }}
+                    activeDot={{ r: 6, fill: '#818cf8', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="rest"
+                    name="Rest Days"
+                    stroke="#0ea5e9"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    fillOpacity={1}
+                    fill="url(#restGradient)"
+                    dot={{ r: 3, fill: '#0ea5e9', strokeWidth: 1, stroke: '#ffffff' }}
+                    activeDot={{ r: 5, fill: '#38bdf8', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -891,7 +867,7 @@ ${analyzedData.habitScores
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {analyzedData.habitScores.map((hs) => (
               <div
-                key={hs.habit._id || hs.habit.id}
+                key={hs.habit?._id || hs.habit?.id || hs.title}
                 className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700/80 transition-all flex flex-col justify-between space-y-2.5"
               >
                 <div>
