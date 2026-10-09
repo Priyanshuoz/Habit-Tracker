@@ -151,10 +151,10 @@ const HabitModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="w-full max-w-lg max-h-[92vh] flex flex-col bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative my-auto">
+        {/* Modal Header (Pinned) */}
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-800 bg-slate-900/95 backdrop-blur shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
               <Sparkles className="w-5 h-5" />
@@ -176,16 +176,16 @@ const HabitModal = ({
           </button>
         </div>
 
-        {/* Error banner in modal */}
-        {formError && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{formError}</span>
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form with Scrollable Content and Pinned Actions Footer */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain">
+            {/* Error banner in modal */}
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
           {/* Starter Habit Templates (only for new habits) */}
           {!initialData && (
             <div className="space-y-2 pb-1">
@@ -506,8 +506,10 @@ const HabitModal = ({
             )}
           </div>
 
-          {/* Modal Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800 mt-6">
+          </div>
+
+          {/* Modal Actions (Pinned at bottom) */}
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-800 bg-slate-900/95 backdrop-blur shrink-0">
             <button
               type="button"
               onClick={onClose}
