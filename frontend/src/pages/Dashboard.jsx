@@ -24,8 +24,12 @@ import HabitModal from '../components/HabitModal';
 import HabitDetailModal from '../components/HabitDetailModal';
 import ConnectionBanner from '../components/ConnectionBanner';
 import NotificationToast from '../components/NotificationToast';
+import ProfileVaultModal from '../components/ProfileVaultModal';
+import GoalPlansView from '../components/GoalPlansView';
+import GoalModal from '../components/GoalModal';
 
 import { habitApi } from '../services/habitApi';
+import { goalApi } from '../services/goalApi';
 import {
   getLocalDateString,
   getPastNDays,
@@ -44,7 +48,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   // Authentication State
-  const [currentUser] = useState(() => {
+  const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('user');
       return saved ? JSON.parse(saved) : null;
@@ -52,6 +56,18 @@ const Dashboard = () => {
       return null;
     }
   });
+
+  // Top Dashboard View Switcher: 'habits' | 'goals'
+  const [dashboardTab, setDashboardTab] = useState('habits');
+
+  // Profile & Private Vault Modal State
+  const [isProfileVaultOpen, setIsProfileVaultOpen] = useState(false);
+  const [profileVaultInitialTab, setProfileVaultInitialTab] = useState('profile');
+
+  // Dedicated Goal Plans State
+  const [goals, setGoals] = useState([]);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
 
   // Habits and Network Status
   const [habits, setHabits] = useState([]);
@@ -185,6 +201,51 @@ const Dashboard = () => {
   useEffect(() => {
     fetchHabits();
   }, [fetchHabits]);
+
+  // Goals Data Fetcher
+  const fetchGoals = useCallback(async () => {
+    try {
+      const data = await goalApi.getAll();
+      setGoals(data || []);
+    } catch (e) {
+      console.error('Error fetching goals:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
+
+  // Goal CRUD Handlers
+  const handleSaveGoal = async (goalData) => {
+    if (editingGoal) {
+      const goalId = editingGoal._id || editingGoal.id;
+      const updated = await goalApi.update(goalId, goalData);
+      setGoals((prev) =>
+        prev.map((g) => ((g._id || g.id) === goalId ? updated : g))
+      );
+    } else {
+      const created = await goalApi.create(goalData);
+      setGoals((prev) => [created, ...prev]);
+    }
+    setIsGoalModalOpen(false);
+    setEditingGoal(null);
+  };
+
+  const handleDeleteGoal = async (goalId) => {
+    if (!window.confirm('Are you sure you want to delete this goal plan?')) return;
+    await goalApi.delete(goalId);
+    setGoals((prev) => prev.filter((g) => (g._id || g.id) !== goalId));
+  };
+
+  const handleToggleGoalHabit = async (goalId, habitId, date) => {
+    const updated = await goalApi.toggleHabitDate(goalId, habitId, date);
+    if (updated) {
+      setGoals((prev) =>
+        prev.map((g) => ((g._id || g.id) === goalId ? updated : g))
+      );
+    }
+  };
 
   // Authentication Handlers
   const handleLogout = () => {
@@ -414,8 +475,23 @@ const Dashboard = () => {
       {/* Modular Navigation Bar */}
       <Navbar
         currentUser={currentUser}
-        onNewHabit={() => handleOpenModal()}
+        onNewHabit={() => {
+          if (dashboardTab === 'goals') {
+            setEditingGoal(null);
+            setIsGoalModalOpen(true);
+          } else {
+            handleOpenModal();
+          }
+        }}
         onLogout={handleLogout}
+        onOpenProfile={(tab) => {
+          setProfileVaultInitialTab(tab || 'profile');
+          setIsProfileVaultOpen(true);
+        }}
+        onOpenVault={() => {
+          setProfileVaultInitialTab('vault');
+          setIsProfileVaultOpen(true);
+        }}
       />
 
       {/* Main Container */}
@@ -453,9 +529,12 @@ const Dashboard = () => {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={fetchHabits}
+              onClick={() => {
+                fetchHabits();
+                fetchGoals();
+              }}
               disabled={isLoading}
-              title="Refresh habits"
+              title="Refresh data"
               className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium cursor-pointer"
             >
               <RefreshCw
@@ -465,6 +544,56 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* Navigation View Switcher (Habits Tracker vs Goal Plans) */}
+        <div className="flex items-center gap-2 p-1.5 bg-slate-900/80 border border-slate-800 rounded-2xl w-fit backdrop-blur-xl">
+          <button
+            onClick={() => setDashboardTab('habits')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+              dashboardTab === 'habits'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Flame className="w-4 h-4 text-orange-400" />
+            <span>Habits Tracker</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
+              {habits.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setDashboardTab('goals')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+              dashboardTab === 'goals'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Target className="w-4 h-4 text-emerald-400" />
+            <span>Goal Plans (e.g. Diet)</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              {goals.length}
+            </span>
+          </button>
+        </div>
+
+        {dashboardTab === 'goals' ? (
+          <GoalPlansView
+            goals={goals}
+            onNewGoal={() => {
+              setEditingGoal(null);
+              setIsGoalModalOpen(true);
+            }}
+            onEditGoal={(goal) => {
+              setEditingGoal(goal);
+              setIsGoalModalOpen(true);
+            }}
+            onDeleteGoal={handleDeleteGoal}
+            onToggleGoalHabit={handleToggleGoalHabit}
+          />
+        ) : (
+          <>
 
         {/* Daily Motivational Quote */}
         {dailyQuote && (
@@ -612,6 +741,8 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+          </>
+        )}
       </main>
 
       {/* Modular Habit Create / Edit Modal */}
@@ -639,6 +770,28 @@ const Dashboard = () => {
         onMarkDone={(habit) => {
           handleToggleDate(habit, todayStr, 'completed');
         }}
+      />
+
+      {/* Profile Photo & Private Passcode Vault Modal */}
+      <ProfileVaultModal
+        isOpen={isProfileVaultOpen}
+        onClose={() => setIsProfileVaultOpen(false)}
+        currentUser={currentUser}
+        initialTab={profileVaultInitialTab}
+        onUpdateUser={(updated) => {
+          setCurrentUser(updated);
+        }}
+      />
+
+      {/* Goal Plan Create / Edit Modal */}
+      <GoalModal
+        isOpen={isGoalModalOpen}
+        onClose={() => {
+          setIsGoalModalOpen(false);
+          setEditingGoal(null);
+        }}
+        onSave={handleSaveGoal}
+        editingGoal={editingGoal}
       />
     </div>
   );

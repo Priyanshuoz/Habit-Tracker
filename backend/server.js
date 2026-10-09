@@ -16,8 +16,8 @@ app.use(cors({
   origin: '*',
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -35,6 +35,7 @@ app.get('/', (req, res) => {
 // Mount Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/habits', require('./routes/habitRoutes'));
+app.use('/api/goals', require('./routes/goalRoutes'));
 
 // 404 Not Found Handler
 app.use((req, res, next) => {

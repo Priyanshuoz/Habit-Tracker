@@ -11,8 +11,12 @@ import {
   Sparkles, 
   CheckCircle2, 
   TrendingUp, 
-  ShieldCheck 
+  ShieldCheck,
+  Camera,
+  Upload,
+  Trash2,
 } from 'lucide-react';
+import { SAMPLE_AVATARS } from '../utils/avatarUtils';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,6 +26,7 @@ const Login = () => {
     name: '',
     email: '',
     password: '',
+    avatar: '',
     rememberMe: false
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +40,44 @@ const Login = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
     if (errorMessage) setErrorMessage('');
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please select a valid image file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 400;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setFormData((prev) => ({ ...prev, avatar: dataUrl }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -61,7 +104,7 @@ const Login = () => {
       // Connect to backend API if running
       const endpoint = isSignUp ? '/api/auth/register' : '/api/auth/login';
       const payload = isSignUp 
-        ? { name: formData.name, email: formData.email, password: formData.password }
+        ? { name: formData.name, email: formData.email, password: formData.password, avatar: formData.avatar }
         : { email: formData.email, password: formData.password };
 
       const response = await fetch(`http://localhost:5000${endpoint}`, {
@@ -237,6 +280,76 @@ const Login = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <div className="flex flex-col items-center justify-center pb-1">
+                  <div className="relative group">
+                    <div className="w-18 h-18 rounded-2xl overflow-hidden bg-gradient-to-tr from-indigo-500 to-emerald-500 p-0.5 shadow-md shadow-indigo-500/20">
+                      <div className="w-full h-full bg-slate-950 rounded-[14px] overflow-hidden flex items-center justify-center">
+                        {formData.avatar ? (
+                          <img
+                            src={formData.avatar}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-7 h-7 text-slate-500" />
+                        )}
+                      </div>
+                    </div>
+                    <label
+                      htmlFor="signup-avatar"
+                      title="Upload profile photo"
+                      className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md border-2 border-slate-900 cursor-pointer transition-all active:scale-95"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <input
+                        id="signup-avatar"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-1.5">
+                    {formData.avatar ? 'Photo selected' : 'Upload Device Image or Pick Avatar'}
+                  </span>
+                  {formData.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, avatar: '' }))}
+                      className="text-[10px] text-rose-400 hover:underline mt-0.5 cursor-pointer"
+                    >
+                      Reset to Default
+                    </button>
+                  )}
+
+                  {/* Sample Avatars Row */}
+                  <div className="w-full mt-3 pt-2.5 border-t border-slate-800/80">
+                    <p className="text-[11px] font-medium text-slate-400 mb-2 text-center">
+                      Or select a sample avatar:
+                    </p>
+                    <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                      {SAMPLE_AVATARS.slice(0, 6).map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, avatar: item.url }))}
+                          title={item.name}
+                          className={`w-9 h-9 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 hover:scale-105 ${
+                            formData.avatar === item.url
+                              ? 'border-indigo-500 ring-2 ring-indigo-500/50 scale-105'
+                              : 'border-slate-800 opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {isSignUp && (
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5" htmlFor="name">

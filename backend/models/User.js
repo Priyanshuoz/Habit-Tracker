@@ -24,6 +24,29 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Please add a password'],
       minlength: 6,
     },
+    avatar: {
+      type: String,
+      default: '',
+    },
+    vaultPin: {
+      type: String,
+      default: '',
+    },
+    vaultPhotos: [
+      {
+        id: { type: String, required: true },
+        imageUrl: { type: String, required: true },
+        category: {
+          type: String,
+          enum: ['Physique', 'Face', 'General'],
+          default: 'Physique',
+        },
+        date: { type: String, default: () => new Date().toISOString().split('T')[0] },
+        note: { type: String, default: '' },
+        weight: { type: String, default: '' },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,
