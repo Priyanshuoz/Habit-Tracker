@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import {
   Sparkles,
   RefreshCw,
@@ -593,6 +593,12 @@ const Dashboard = () => {
       };
     });
   }, [past7Days, habits]);
+
+  // Unauthenticated guard: redirect to /login immediately if not authenticated
+  const token = localStorage.getItem('token');
+  if (!token || token === 'demo-token-12345') {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-100 relative overflow-x-hidden selection:bg-indigo-500 selection:text-white">

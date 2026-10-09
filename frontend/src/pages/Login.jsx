@@ -223,6 +223,12 @@ const Login = () => {
               </div>
             </div>
 
+            {/* Account Required Notice */}
+            <div className="mb-5 p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-xs flex items-center gap-2.5">
+              <Lock className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>Sign in or create a free account to enter and manage your habits.</span>
+            </div>
+
             {/* Mode Switcher Tabs */}
             <div className="flex p-1 rounded-xl bg-slate-950/70 border border-slate-800 mb-6">
               <button
