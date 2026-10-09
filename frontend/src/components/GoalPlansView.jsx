@@ -14,7 +14,16 @@ import {
   Award,
   ChevronRight,
   Info,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import { getLocalDateString } from '../utils/habitUtils';
 
 const COLOR_MAP = {
@@ -23,36 +32,42 @@ const COLOR_MAP = {
     bar: 'bg-emerald-500',
     gradient: 'from-emerald-500/20 to-teal-500/5',
     check: 'text-emerald-400',
+    hex: '#10b981',
   },
   indigo: {
     badge: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
     bar: 'bg-indigo-500',
     gradient: 'from-indigo-500/20 to-purple-500/5',
     check: 'text-indigo-400',
+    hex: '#6366f1',
   },
   purple: {
     badge: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     bar: 'bg-purple-500',
     gradient: 'from-purple-500/20 to-pink-500/5',
     check: 'text-purple-400',
+    hex: '#a855f7',
   },
   rose: {
     badge: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
     bar: 'bg-rose-500',
     gradient: 'from-rose-500/20 to-orange-500/5',
     check: 'text-rose-400',
+    hex: '#f43f5e',
   },
   amber: {
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     bar: 'bg-amber-500',
     gradient: 'from-amber-500/20 to-yellow-500/5',
     check: 'text-amber-400',
+    hex: '#f59e0b',
   },
   cyan: {
     badge: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
     bar: 'bg-cyan-500',
     gradient: 'from-cyan-500/20 to-blue-500/5',
     check: 'text-cyan-400',
+    hex: '#06b6d4',
   },
 };
 
@@ -64,7 +79,15 @@ const GoalPlansView = ({
   onToggleGoalHabit,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [chartMode, setChartMode] = useState('status'); // 'status' | 'byPlan'
   const todayStr = useMemo(() => getLocalDateString(new Date()), []);
+  const formattedTodayDate = useMemo(() => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  }, []);
 
   // Filter goals
   const filteredGoals = useMemo(() => {
@@ -96,6 +119,64 @@ const GoalPlansView = ({
       completionRate,
     };
   }, [goals, todayStr]);
+
+  // Status breakdown pie data for Today (Completed vs Pending)
+  const statusPieData = useMemo(() => {
+    if (stats.totalHabitsToday === 0) {
+      return [{ name: 'No Habits Set', value: 1, color: '#334155' }];
+    }
+
+    const completed = stats.completedHabitsToday;
+    const pending = Math.max(0, stats.totalHabitsToday - completed);
+
+    const data = [];
+    if (completed > 0) {
+      data.push({
+        name: 'Completed Today',
+        value: completed,
+        color: '#10b981',
+      });
+    }
+    if (pending > 0) {
+      data.push({
+        name: 'Pending Today',
+        value: pending,
+        color: '#6366f1',
+      });
+    }
+    return data;
+  }, [stats]);
+
+  // Breakdown by Goal Plan for Today
+  const byPlanPieData = useMemo(() => {
+    if (stats.totalHabitsToday === 0) {
+      return [{ name: 'No Habits Set', value: 1, color: '#334155' }];
+    }
+
+    const items = [];
+    goals.forEach((g) => {
+      const habits = g.habits || [];
+      if (habits.length === 0) return;
+      const doneToday = habits.filter(
+        (h) => h.completedDates && h.completedDates.includes(todayStr)
+      ).length;
+      const colorTokens = COLOR_MAP[g.color] || COLOR_MAP.emerald;
+
+      items.push({
+        name: g.title,
+        value: doneToday > 0 ? doneToday : habits.length,
+        doneToday,
+        total: habits.length,
+        color: colorTokens.hex,
+      });
+    });
+
+    return items.length > 0
+      ? items
+      : [{ name: 'No Active Plans', value: 1, color: '#334155' }];
+  }, [goals, todayStr, stats]);
+
+  const activeChartData = chartMode === 'status' ? statusPieData : byPlanPieData;
 
   // Calculate past 5 days for the micro-history
   const pastDays = useMemo(() => {
@@ -165,6 +246,160 @@ const GoalPlansView = ({
             <TrendingUp className="w-6 h-6" />
           </div>
         </div>
+      </div>
+
+      {/* Today's Goal Performance Breakdown (Pie Chart Card) */}
+      <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <PieChartIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">
+                  Today's Goal Performance Breakdown
+                </h3>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                  {formattedTodayDate}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Visual completion distribution for your dedicated goal habits today
+              </p>
+            </div>
+          </div>
+
+          {/* Chart View Toggle */}
+          <div className="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setChartMode('status')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                chartMode === 'status'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Execution Status
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartMode('byPlan')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                chartMode === 'byPlan'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              By Goal Plan
+            </button>
+          </div>
+        </div>
+
+        {/* Chart Content Area */}
+        {stats.totalHabitsToday === 0 ? (
+          <div className="py-12 text-center text-slate-400 space-y-2">
+            <Info className="w-8 h-8 text-slate-600 mx-auto" />
+            <p className="text-xs">No habits configured inside your goal plans yet.</p>
+            <p className="text-[11px] text-slate-500">
+              Add habits to your plans below to see today's pie chart breakdown.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center pt-4">
+            {/* Left: Recharts Pie Chart */}
+            <div className="md:col-span-7 h-64 relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={activeChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={88}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {activeChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      borderColor: '#334155',
+                      borderRadius: '12px',
+                      color: '#f8fafc',
+                      fontSize: '12px',
+                    }}
+                    itemStyle={{ fontWeight: 600 }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              {/* Center Stat inside the Donut */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
+                <span className="text-2xl font-black text-white tracking-tight">
+                  {stats.completionRate}%
+                </span>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Complete
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Breakdown Indicators & Metrics */}
+            <div className="md:col-span-5 space-y-3">
+              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                  <span className="text-xs font-medium text-slate-300">Completed Habits</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-bold text-white">{stats.completedHabitsToday}</span>
+                  <span className="text-[11px] text-slate-500 ml-1">
+                    ({stats.completionRate}%)
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50" />
+                  <span className="text-xs font-medium text-slate-300">Remaining Today</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-bold text-white">
+                    {Math.max(0, stats.totalHabitsToday - stats.completedHabitsToday)}
+                  </span>
+                  <span className="text-[11px] text-slate-500 ml-1">
+                    ({100 - stats.completionRate}%)
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-medium text-emerald-300">Today's Pace</span>
+                </div>
+                <span className="text-xs font-bold text-emerald-400">
+                  {stats.completionRate === 100
+                    ? '100% Perfect Score 🎉'
+                    : stats.completionRate >= 50
+                    ? 'On Track (50%+)'
+                    : 'Actions Pending'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Header & Filters */}
@@ -292,19 +527,54 @@ const GoalPlansView = ({
                     </div>
                   </div>
 
-                  {/* Progress Bar for Today */}
-                  <div className="space-y-1.5 bg-slate-950/50 p-3 rounded-2xl border border-slate-800/80">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400 font-medium">Today's Plan Execution</span>
-                      <span className="font-bold text-white">
-                        {todayCompletedCount} / {habits.length} ({goalProgress}%)
+                  {/* Progress & Mini Pie for Today */}
+                  <div className="flex items-center gap-3.5 bg-slate-950/50 p-3.5 rounded-2xl border border-slate-800/80">
+                    {/* SVG Mini Donut Chart */}
+                    <div className="relative w-11 h-11 shrink-0 flex items-center justify-center">
+                      <svg className="w-11 h-11 transform -rotate-90" viewBox="0 0 36 36">
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          className="text-slate-800"
+                          strokeWidth="3.5"
+                          stroke="currentColor"
+                          fill="transparent"
+                        />
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          className={colorTokens.check}
+                          strokeWidth="3.5"
+                          strokeDasharray={2 * Math.PI * 15}
+                          strokeDashoffset={
+                            2 * Math.PI * 15 * (1 - (habits.length > 0 ? goalProgress / 100 : 0))
+                          }
+                          strokeLinecap="round"
+                          stroke="currentColor"
+                          fill="transparent"
+                          style={{ transition: 'stroke-dashoffset 0.4s ease-in-out' }}
+                        />
+                      </svg>
+                      <span className="absolute text-[10px] font-bold text-white">
+                        {goalProgress}%
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${colorTokens.bar} rounded-full transition-all duration-300`}
-                        style={{ width: `${goalProgress}%` }}
-                      />
+
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-medium truncate">Today's Plan Execution</span>
+                        <span className="font-bold text-white shrink-0">
+                          {todayCompletedCount} / {habits.length}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${colorTokens.bar} rounded-full transition-all duration-300`}
+                          style={{ width: `${goalProgress}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
 
