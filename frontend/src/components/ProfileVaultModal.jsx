@@ -429,7 +429,7 @@ const ProfileVaultModal = ({
                   
                   {/* Category Pills */}
                   <div className="flex items-center gap-1">
-                    {['All', 'Cartoonish', 'Rage Mode'].map((cat) => (
+                    {['All', 'Cartoonish', 'Motivational', 'Rage Mode'].map((cat) => (
                       <button
                         key={cat}
                         type="button"

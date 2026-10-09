@@ -330,7 +330,7 @@ const Login = () => {
                       <span className="text-[11px] font-medium text-slate-400">
                         Or pick a sample avatar:
                       </span>
-                      <span className="text-[10px] text-slate-500">Cartoonish & Rage</span>
+                      <span className="text-[10px] text-slate-500">Cartoon, Motivation & Rage</span>
                     </div>
                     <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
                       {SAMPLE_AVATARS.map((item) => (
