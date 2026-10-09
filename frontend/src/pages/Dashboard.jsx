@@ -104,10 +104,12 @@ const Dashboard = () => {
     return found || selectedDetailHabit;
   }, [habits, selectedDetailHabit]);
 
-  // Authentication protection
+  // Authentication protection: Only authenticated users can access dashboard
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (!token || token === 'demo-token-12345') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       navigate('/login');
     }
   }, [navigate]);

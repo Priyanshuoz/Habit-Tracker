@@ -129,25 +129,14 @@ const Login = () => {
       }, 1000);
 
     } catch (err) {
-      // If backend is not running, provide helpful feedback with offline demo option
       if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        setErrorMessage('Cannot reach backend server on port 5000. Start backend with "npm run dev", or use "Explore as Demo" below!');
+        setErrorMessage('Cannot reach backend server. Please verify the backend is running.');
       } else {
         setErrorMessage(err.message);
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleDemoLogin = () => {
-    localStorage.setItem('token', 'demo-token-12345');
-    localStorage.setItem('user', JSON.stringify({
-      id: 'demo-user',
-      name: 'Alex Rivera',
-      email: 'alex.rivera@example.com'
-    }));
-    navigate('/dashboard');
   };
 
   return (
@@ -451,27 +440,6 @@ const Login = () => {
                 )}
               </button>
             </form>
-
-            {/* Quick Demo Access Divider */}
-            <div className="relative my-6 text-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-800" />
-              </div>
-              <span className="relative bg-slate-900 px-3 text-[11px] uppercase tracking-wider text-slate-500 font-medium">
-                Instant Preview
-              </span>
-            </div>
-
-            {/* Demo Instant Login Button */}
-            <button
-              type="button"
-              id="demo-access-btn"
-              onClick={handleDemoLogin}
-              className="w-full py-2.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Explore Dashboard (Instant Demo)</span>
-            </button>
 
             {/* Footer switcher */}
             <p className="text-center text-xs text-slate-500 mt-6">
