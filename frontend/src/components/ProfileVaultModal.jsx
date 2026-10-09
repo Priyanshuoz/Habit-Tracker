@@ -66,6 +66,15 @@ const ProfileVaultModal = ({
   const [sliderPosition, setSliderPosition] = useState(50);
   const [comparisonLayout, setComparisonLayout] = useState('split'); // 'split' | 'slider'
 
+  // Vault Change PIN State
+  const [isChangePinOpen, setIsChangePinOpen] = useState(false);
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmNewPinInput, setConfirmNewPinInput] = useState('');
+  const [changePinError, setChangePinError] = useState('');
+  const [changePinSuccess, setChangePinSuccess] = useState('');
+  const [isSubmittingChangePin, setIsSubmittingChangePin] = useState(false);
+
   const fileInputRef = useRef(null);
   const vaultFileInputRef = useRef(null);
 
@@ -228,6 +237,46 @@ const ProfileVaultModal = ({
       } catch (err) {
         setVaultError(err.message || 'Incorrect PIN. Please try again.');
       }
+    }
+  };
+
+  const handleChangePinSubmit = async (e) => {
+    e.preventDefault();
+    setChangePinError('');
+    setChangePinSuccess('');
+
+    if (currentPinInput.length !== 4) {
+      setChangePinError('Current PIN must be exactly 4 digits');
+      return;
+    }
+    if (newPinInput.length !== 4) {
+      setChangePinError('New PIN must be exactly 4 digits');
+      return;
+    }
+    if (newPinInput !== confirmNewPinInput) {
+      setChangePinError('New PINs do not match');
+      return;
+    }
+    if (currentPinInput === newPinInput) {
+      setChangePinError('New PIN must be different from current PIN');
+      return;
+    }
+
+    setIsSubmittingChangePin(true);
+    try {
+      await vaultApi.verifyOrSetPin(currentPinInput, 'change', newPinInput);
+      setChangePinSuccess('Vault PIN changed successfully!');
+      setTimeout(() => {
+        setIsChangePinOpen(false);
+        setCurrentPinInput('');
+        setNewPinInput('');
+        setConfirmNewPinInput('');
+        setChangePinSuccess('');
+      }, 1500);
+    } catch (err) {
+      setChangePinError(err.message || 'Incorrect current PIN');
+    } finally {
+      setIsSubmittingChangePin(false);
     }
   };
 
@@ -546,6 +595,22 @@ const ProfileVaultModal = ({
                       >
                         <Camera className="w-3.5 h-3.5" />
                         <span>Add Photo</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsChangePinOpen(true);
+                          setChangePinError('');
+                          setChangePinSuccess('');
+                          setCurrentPinInput('');
+                          setNewPinInput('');
+                          setConfirmNewPinInput('');
+                        }}
+                        title="Change Vault PIN"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700/60 transition-all cursor-pointer"
+                      >
+                        <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Change PIN</span>
                       </button>
 
                       <button
@@ -1046,6 +1111,113 @@ const ProfileVaultModal = ({
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-50 transition-all cursor-pointer shadow-lg shadow-emerald-600/30"
                   >
                     {isUploadingPhoto ? 'Saving...' : 'Save to Vault'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* VAULT CHANGE PIN SUB-MODAL */}
+        {isChangePinOpen && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+            <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  <span>Change Vault 4-Digit PIN</span>
+                </h4>
+                <button
+                  onClick={() => setIsChangePinOpen(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {changePinSuccess && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  <span>{changePinSuccess}</span>
+                </div>
+              )}
+
+              {changePinError && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{changePinError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangePinSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    Current 4-Digit PIN:
+                  </label>
+                  <input
+                    type="password"
+                    maxLength="4"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoFocus
+                    placeholder="••••"
+                    value={currentPinInput}
+                    onChange={(e) => setCurrentPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-center tracking-[0.5em] text-lg font-bold text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    New 4-Digit PIN:
+                  </label>
+                  <input
+                    type="password"
+                    maxLength="4"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="••••"
+                    value={newPinInput}
+                    onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-center tracking-[0.5em] text-lg font-bold text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    Confirm New 4-Digit PIN:
+                  </label>
+                  <input
+                    type="password"
+                    maxLength="4"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="••••"
+                    value={confirmNewPinInput}
+                    onChange={(e) => setConfirmNewPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-center tracking-[0.5em] text-lg font-bold text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePinOpen(false)}
+                    className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      isSubmittingChangePin ||
+                      currentPinInput.length !== 4 ||
+                      newPinInput.length !== 4 ||
+                      confirmNewPinInput.length !== 4
+                    }
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-semibold disabled:opacity-40 transition-all cursor-pointer shadow-md"
+                  >
+                    {isSubmittingChangePin ? 'Updating...' : 'Update PIN'}
                   </button>
                 </div>
               </form>
