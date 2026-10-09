@@ -39,6 +39,7 @@ import {
   isDateCompleted,
   isDateSkipped,
   isDateMissed,
+  isDateBeforeCreation,
   CATEGORY_COLORS,
   DEFAULT_CATEGORY_COLOR,
 } from '../utils/habitUtils';
@@ -156,33 +157,48 @@ const AnalyticsChart = ({
   // 3. Process All Analyzed Data for the Active Period
   const analyzedData = useMemo(() => {
     const totalHabits = habits.length;
-    const totalPossible = totalHabits * activeDays.length;
 
+    let totalPossible = 0;
     let totalCompleted = 0;
     let totalRest = 0;
     let totalMissed = 0;
+    let totalPending = 0;
 
     // Daily breakdown for timeline chart
     const dailyBreakdown = activeDays.map((day) => {
       let compCount = 0;
       let restCount = 0;
       let missCount = 0;
+      let activeForDay = 0;
 
       habits.forEach((h) => {
+        // Do NOT count days before the habit was created!
+        if (isDateBeforeCreation(h, day.dateStr)) {
+          return;
+        }
+
+        activeForDay++;
+        totalPossible++;
+
         if (isDateCompleted(h, day.dateStr)) {
           compCount++;
+          totalCompleted++;
         } else if (isDateSkipped(h, day.dateStr)) {
           restCount++;
+          totalRest++;
         } else if (day.dateStr < todayStr) {
+          // Missed only if past and after creation
           missCount++;
+          totalMissed++;
+        } else {
+          totalPending++;
         }
       });
 
-      totalCompleted += compCount;
-      totalRest += restCount;
-      totalMissed += missCount;
-
-      const rate = totalHabits > 0 ? Math.round((compCount / totalHabits) * 100) : 0;
+      const rate =
+        activeForDay > 0
+          ? Math.round((compCount / activeForDay) * 100)
+          : 0;
 
       return {
         dateStr: day.dateStr,
@@ -195,6 +211,7 @@ const AnalyticsChart = ({
         rest: restCount,
         missed: missCount,
         rate,
+        activeHabits: activeForDay,
         totalHabits,
         isToday: day.isToday,
       };
@@ -212,18 +229,20 @@ const AnalyticsChart = ({
             completed: 0,
             rest: 0,
             missed: 0,
+            possible: 0,
             daysCount: 0,
           };
         }
         weekGroups[weekNum].completed += d.completed;
         weekGroups[weekNum].rest += d.rest;
         weekGroups[weekNum].missed += d.missed;
+        weekGroups[weekNum].possible += d.activeHabits;
         weekGroups[weekNum].daysCount += 1;
       });
 
       Object.keys(weekGroups).forEach((w) => {
         const g = weekGroups[w];
-        const possible = totalHabits * g.daysCount;
+        const possible = g.possible;
         monthlyWeeklyBlocks.push({
           label: g.name,
           completed: g.completed,
@@ -234,7 +253,7 @@ const AnalyticsChart = ({
       });
     }
 
-    // Adherence Rate
+    // Adherence Rate based strictly on valid scheduled days
     const adherenceRate =
       totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
 
@@ -248,19 +267,25 @@ const AnalyticsChart = ({
       }
     });
 
-    // Habit-by-Habit Performance Matrix
+    // Habit-by-Habit Performance Matrix (evaluating only days since each habit's creation)
     const habitScores = habits.map((h) => {
       let doneCount = 0;
       let skipCount = 0;
+      let missCount = 0;
+      let applicableDaysCount = 0;
 
       activeDays.forEach((day) => {
+        if (isDateBeforeCreation(h, day.dateStr)) return;
+        applicableDaysCount++;
+
         if (isDateCompleted(h, day.dateStr)) doneCount++;
         else if (isDateSkipped(h, day.dateStr)) skipCount++;
+        else if (day.dateStr < todayStr) missCount++;
       });
 
       const habitRate =
-        activeDays.length > 0
-          ? Math.round((doneCount / activeDays.length) * 100)
+        applicableDaysCount > 0
+          ? Math.round((doneCount / applicableDaysCount) * 100)
           : 0;
 
       let statusBadge = {
@@ -291,7 +316,8 @@ const AnalyticsChart = ({
         color: h.color || 'indigo',
         doneCount,
         skipCount,
-        totalDays: activeDays.length,
+        missCount,
+        totalDays: applicableDaysCount,
         rate: habitRate,
         statusBadge,
       };
@@ -323,15 +349,12 @@ const AnalyticsChart = ({
       rate: c.possible > 0 ? Math.round((c.completed / c.possible) * 100) : 0,
     }));
 
-    // Status Distribution Pie Data
+    // Status Distribution Pie Data: Only valid days since habit creation
     const pieData = [
       { name: 'Completed Check-ins', value: totalCompleted, color: '#10b981' },
       { name: 'Rest / Skipped Days', value: totalRest, color: '#6366f1' },
-      {
-        name: 'Pending / Missed',
-        value: Math.max(0, totalPossible - totalCompleted - totalRest),
-        color: '#334155',
-      },
+      { name: 'Missed Days', value: totalMissed, color: '#f43f5e' },
+      { name: 'Pending (Today / Ahead)', value: totalPending, color: '#475569' },
     ].filter((item) => item.value > 0);
 
     return {
@@ -342,6 +365,7 @@ const AnalyticsChart = ({
       totalCompleted,
       totalRest,
       totalMissed,
+      totalPending,
       adherenceRate,
       peakDay,
       bestHabit,
@@ -781,16 +805,21 @@ ${analyzedData.habitScores
 
               <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-slate-600" />
-                  <span className="text-xs text-slate-300 font-medium">Pending / Missed</span>
+                  <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
+                  <span className="text-xs text-slate-300 font-medium">Missed Days</span>
                 </div>
                 <span className="text-sm font-bold text-white">
-                  {Math.max(
-                    0,
-                    analyzedData.totalPossible -
-                      analyzedData.totalCompleted -
-                      analyzedData.totalRest
-                  )}
+                  {analyzedData.totalMissed}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-slate-500" />
+                  <span className="text-xs text-slate-300 font-medium">Pending (Today / Ahead)</span>
+                </div>
+                <span className="text-sm font-bold text-white">
+                  {analyzedData.totalPending}
                 </span>
               </div>
             </div>
