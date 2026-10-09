@@ -12,7 +12,15 @@ import {
   BookOpen,
   Briefcase,
   Flame,
+  Bell,
+  Droplets,
+  Footprints,
+  Clock,
 } from 'lucide-react';
+import {
+  requestNotificationPermission,
+  sendDesktopNotification,
+} from '../utils/notificationUtils';
 
 const CATEGORIES = [
   'Diet & Nutrition',
@@ -39,6 +47,8 @@ const TEMPLATES = [
     category: 'Diet & Nutrition',
     color: 'emerald',
     targetMetric: 'Target: 70kg / < 20g Carbs',
+    reminderCategory: 'hydration',
+    reminderIntervalHours: 2,
     habits: [
       'Drink 3.5 Liters of Water',
       'Keep Net Carbs Under 25g',
@@ -51,6 +61,8 @@ const TEMPLATES = [
     category: 'Fitness & Muscle',
     color: 'indigo',
     targetMetric: 'Target: 160g Protein / 5x Gym',
+    reminderCategory: 'hydration',
+    reminderIntervalHours: 2,
     habits: [
       'Hit 160g Daily Protein',
       'Pre-workout Creatine & Hydration',
@@ -63,6 +75,8 @@ const TEMPLATES = [
     category: 'Health & Wellness',
     color: 'purple',
     targetMetric: '30 Days Unbroken Streak',
+    reminderCategory: 'walk',
+    reminderIntervalHours: 1,
     habits: [
       '15 Min Morning Sunlight Walk',
       'Zero Refined Sugars & Sodas',
@@ -83,6 +97,15 @@ const GoalModal = ({ isOpen, onClose, onSave, editingGoal = null }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Reminder State (Hydration, Walk, or Custom)
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderType, setReminderType] = useState('interval'); // 'interval' | 'daily'
+  const [reminderCategory, setReminderCategory] = useState('hydration'); // 'hydration' | 'walk' | 'custom'
+  const [reminderIntervalHours, setReminderIntervalHours] = useState(2);
+  const [reminderTime, setReminderTime] = useState('09:00');
+  const [reminderStartHour, setReminderStartHour] = useState(8);
+  const [reminderEndHour, setReminderEndHour] = useState(21);
+
   useEffect(() => {
     if (editingGoal) {
       setTitle(editingGoal.title || '');
@@ -92,6 +115,13 @@ const GoalModal = ({ isOpen, onClose, onSave, editingGoal = null }) => {
       setTargetDate(editingGoal.targetDate || '');
       setTargetMetric(editingGoal.targetMetric || '');
       setHabits(editingGoal.habits || []);
+      setReminderEnabled(Boolean(editingGoal.reminderEnabled));
+      setReminderType(editingGoal.reminderType || 'interval');
+      setReminderCategory(editingGoal.reminderCategory || 'hydration');
+      setReminderIntervalHours(Number(editingGoal.reminderIntervalHours) || 2);
+      setReminderTime(editingGoal.reminderTime || '09:00');
+      setReminderStartHour(Number(editingGoal.reminderStartHour) || 8);
+      setReminderEndHour(Number(editingGoal.reminderEndHour) || 21);
     } else {
       setTitle('');
       setDescription('');
@@ -103,6 +133,13 @@ const GoalModal = ({ isOpen, onClose, onSave, editingGoal = null }) => {
         { id: 'h_1', title: 'Drink 3L of Water', frequency: 'daily', completedDates: [] },
         { id: 'h_2', title: 'Zero Refined Sugar', frequency: 'daily', completedDates: [] },
       ]);
+      setReminderEnabled(false);
+      setReminderType('interval');
+      setReminderCategory('hydration');
+      setReminderIntervalHours(2);
+      setReminderTime('09:00');
+      setReminderStartHour(8);
+      setReminderEndHour(21);
     }
     setError('');
   }, [editingGoal, isOpen]);
@@ -130,6 +167,12 @@ const GoalModal = ({ isOpen, onClose, onSave, editingGoal = null }) => {
     setCategory(template.category);
     setColor(template.color);
     setTargetMetric(template.targetMetric);
+    if (template.reminderCategory) {
+      setReminderEnabled(true);
+      setReminderType('interval');
+      setReminderCategory(template.reminderCategory);
+      setReminderIntervalHours(template.reminderIntervalHours || 2);
+    }
     setHabits(
       template.habits.map((h, i) => ({
         id: `gh_${Date.now()}_${i}`,
@@ -163,6 +206,13 @@ const GoalModal = ({ isOpen, onClose, onSave, editingGoal = null }) => {
         targetDate,
         targetMetric: targetMetric.trim(),
         habits,
+        reminderEnabled,
+        reminderType,
+        reminderCategory,
+        reminderIntervalHours,
+        reminderTime,
+        reminderStartHour,
+        reminderEndHour,
       });
       onClose();
     } catch (err) {
@@ -391,6 +441,187 @@ const GoalModal = ({ isOpen, onClose, onSave, editingGoal = null }) => {
                 <span>Add</span>
               </button>
             </div>
+          </div>
+
+          {/* Smart Routine & Interval Reminder Section */}
+          <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    reminderEnabled
+                      ? reminderCategory === 'hydration'
+                        ? 'bg-cyan-500/20 text-cyan-400'
+                        : reminderCategory === 'walk'
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-amber-500/20 text-amber-400'
+                      : 'bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {reminderCategory === 'hydration' ? (
+                    <Droplets className="w-4 h-4" />
+                  ) : reminderCategory === 'walk' ? (
+                    <Footprints className="w-4 h-4" />
+                  ) : (
+                    <Bell className="w-4 h-4" />
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-200 block">
+                    Goal Habit Reminders & Nudges
+                  </label>
+                  <p className="text-[11px] text-slate-400">
+                    Hydration, walk breaks, or scheduled routine reminders
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const nextVal = !reminderEnabled;
+                  setReminderEnabled(nextVal);
+                  if (nextVal) {
+                    await requestNotificationPermission();
+                  }
+                }}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                  reminderEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-800 justify-start'
+                }`}
+              >
+                <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+              </button>
+            </div>
+
+            {/* Reminder Configuration details (Shown when enabled) */}
+            {reminderEnabled && (
+              <div className="pt-2 border-t border-slate-800/80 space-y-3 animate-in fade-in duration-200">
+                {/* Mode / Category Selector */}
+                <div>
+                  <span className="text-[11px] font-medium text-slate-400 block mb-1.5">
+                    Reminder Style & Preset:
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReminderCategory('hydration');
+                        setReminderType('interval');
+                        setReminderIntervalHours(2);
+                      }}
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        reminderCategory === 'hydration'
+                          ? 'bg-cyan-500/10 border-cyan-500 text-cyan-300'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Hydration Nudge</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Every 1-2 hours</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReminderCategory('walk');
+                        setReminderType('interval');
+                        setReminderIntervalHours(1);
+                      }}
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        reminderCategory === 'walk'
+                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Footprints className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Walk / Steps</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Every 1 hour</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReminderCategory('custom');
+                        setReminderType('daily');
+                      }}
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        reminderCategory === 'custom'
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-300'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Fixed Time</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Daily alarm</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-controls based on Type */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+                  {reminderType === 'interval' ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-slate-300 font-medium">Interval Frequency:</span>
+                      <select
+                        value={reminderIntervalHours}
+                        onChange={(e) => setReminderIntervalHours(Number(e.target.value))}
+                        className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      >
+                        <option value={1}>Every 1 Hour (Intensive)</option>
+                        <option value={1.5}>Every 1.5 Hours</option>
+                        <option value={2}>Every 2 Hours (Recommended)</option>
+                        <option value={3}>Every 3 Hours</option>
+                        <option value={4}>Every 4 Hours</option>
+                      </select>
+                      <span className="text-[11px] text-slate-500">Between 8 AM – 9 PM</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs text-slate-300 font-medium">Reminder Time:</span>
+                      <input
+                        type="time"
+                        value={reminderTime}
+                        onChange={(e) => setReminderTime(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await requestNotificationPermission();
+                      const nudgeTitle =
+                        reminderCategory === 'hydration'
+                          ? '💧 Hydration Nudge: Drink Water!'
+                          : reminderCategory === 'walk'
+                          ? '🚶 Walk Break: Time to Move!'
+                          : `Goal Reminder: ${title || 'Your Goal Plan'}`;
+                      const nudgeBody =
+                        reminderCategory === 'hydration'
+                          ? 'Drink a glass of water (250ml) to hit your daily hydration goal.'
+                          : reminderCategory === 'walk'
+                          ? 'Stand up, stretch and take a 5-minute walk (250 steps)!'
+                          : `Check in on ${title || 'your plan'} habits for today.`;
+
+                      sendDesktopNotification(nudgeTitle, { body: nudgeBody });
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    <Bell className="w-3 h-3" />
+                    <span>Test Nudge Alert</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

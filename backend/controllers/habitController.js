@@ -101,6 +101,11 @@ const createHabit = async (req, res) => {
       targetDays,
       reminderEnabled,
       reminderTime,
+      reminderType,
+      reminderCategory,
+      reminderIntervalHours,
+      reminderStartHour,
+      reminderEndHour,
     } = req.body;
 
     if (!title || !title.trim()) {
@@ -121,6 +126,11 @@ const createHabit = async (req, res) => {
       longestStreak: 0,
       reminderEnabled: Boolean(reminderEnabled),
       reminderTime: reminderTime || '',
+      reminderType: reminderType || 'daily',
+      reminderCategory: reminderCategory || 'custom',
+      reminderIntervalHours: Number(reminderIntervalHours) || 2,
+      reminderStartHour: Number(reminderStartHour) || 8,
+      reminderEndHour: Number(reminderEndHour) || 21,
     });
 
     res.status(201).json(habit);
@@ -155,6 +165,11 @@ const updateHabit = async (req, res) => {
       targetDays,
       reminderEnabled,
       reminderTime,
+      reminderType,
+      reminderCategory,
+      reminderIntervalHours,
+      reminderStartHour,
+      reminderEndHour,
     } = req.body;
 
     habit.title = title !== undefined ? title : habit.title;
@@ -165,6 +180,11 @@ const updateHabit = async (req, res) => {
     habit.targetDays = targetDays !== undefined ? targetDays : habit.targetDays;
     if (reminderEnabled !== undefined) habit.reminderEnabled = Boolean(reminderEnabled);
     if (reminderTime !== undefined) habit.reminderTime = reminderTime;
+    if (reminderType !== undefined) habit.reminderType = reminderType;
+    if (reminderCategory !== undefined) habit.reminderCategory = reminderCategory;
+    if (reminderIntervalHours !== undefined) habit.reminderIntervalHours = Number(reminderIntervalHours);
+    if (reminderStartHour !== undefined) habit.reminderStartHour = Number(reminderStartHour);
+    if (reminderEndHour !== undefined) habit.reminderEndHour = Number(reminderEndHour);
 
     const updatedHabit = await habit.save();
     res.json(updatedHabit);

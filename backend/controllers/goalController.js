@@ -18,7 +18,22 @@ const getGoals = async (req, res) => {
 // @access  Private
 const createGoal = async (req, res) => {
   try {
-    const { title, description, category, color, targetDate, targetMetric, habits } = req.body;
+    const {
+      title,
+      description,
+      category,
+      color,
+      targetDate,
+      targetMetric,
+      habits,
+      reminderEnabled,
+      reminderType,
+      reminderCategory,
+      reminderTime,
+      reminderIntervalHours,
+      reminderStartHour,
+      reminderEndHour,
+    } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Goal title is required' });
@@ -42,6 +57,13 @@ const createGoal = async (req, res) => {
       targetMetric: targetMetric || '',
       habits: formattedHabits,
       status: 'active',
+      reminderEnabled: Boolean(reminderEnabled),
+      reminderType: reminderType || 'interval',
+      reminderCategory: reminderCategory || 'hydration',
+      reminderTime: reminderTime || '09:00',
+      reminderIntervalHours: Number(reminderIntervalHours) || 2,
+      reminderStartHour: Number(reminderStartHour) || 8,
+      reminderEndHour: Number(reminderEndHour) || 21,
     });
 
     res.status(201).json(goal);
@@ -66,7 +88,23 @@ const updateGoal = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to modify this goal' });
     }
 
-    const { title, description, category, color, targetDate, targetMetric, status, habits } = req.body;
+    const {
+      title,
+      description,
+      category,
+      color,
+      targetDate,
+      targetMetric,
+      status,
+      habits,
+      reminderEnabled,
+      reminderType,
+      reminderCategory,
+      reminderTime,
+      reminderIntervalHours,
+      reminderStartHour,
+      reminderEndHour,
+    } = req.body;
 
     if (title) goal.title = title.trim();
     if (description !== undefined) goal.description = description.trim();
@@ -75,6 +113,13 @@ const updateGoal = async (req, res) => {
     if (targetDate !== undefined) goal.targetDate = targetDate;
     if (targetMetric !== undefined) goal.targetMetric = targetMetric;
     if (status) goal.status = status;
+    if (reminderEnabled !== undefined) goal.reminderEnabled = Boolean(reminderEnabled);
+    if (reminderType !== undefined) goal.reminderType = reminderType;
+    if (reminderCategory !== undefined) goal.reminderCategory = reminderCategory;
+    if (reminderTime !== undefined) goal.reminderTime = reminderTime;
+    if (reminderIntervalHours !== undefined) goal.reminderIntervalHours = Number(reminderIntervalHours);
+    if (reminderStartHour !== undefined) goal.reminderStartHour = Number(reminderStartHour);
+    if (reminderEndHour !== undefined) goal.reminderEndHour = Number(reminderEndHour);
     if (habits) {
       goal.habits = habits.map((h, index) => ({
         id: h.id || `gh_${Date.now()}_${index}`,

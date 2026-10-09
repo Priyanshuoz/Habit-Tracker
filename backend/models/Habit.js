@@ -63,6 +63,28 @@ const habitSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    reminderType: {
+      type: String,
+      enum: ['daily', 'interval'],
+      default: 'daily',
+    },
+    reminderCategory: {
+      type: String,
+      enum: ['custom', 'hydration', 'walk'],
+      default: 'custom',
+    },
+    reminderIntervalHours: {
+      type: Number,
+      default: 2,
+    },
+    reminderStartHour: {
+      type: Number,
+      default: 8,
+    },
+    reminderEndHour: {
+      type: Number,
+      default: 21,
+    },
   },
   {
     timestamps: true,

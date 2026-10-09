@@ -116,66 +116,155 @@ const Dashboard = () => {
   // Active Reminder In-App Notification Toast
   const [activeNotification, setActiveNotification] = useState(null);
 
-  // Background reminder scheduler effect: checks active habit reminders every 25 seconds
+  // Background reminder scheduler effect: checks active habit & goal reminders every 25 seconds
   useEffect(() => {
     const checkScheduledReminders = () => {
       const now = new Date();
       const currentHours = String(now.getHours()).padStart(2, '0');
       const currentMins = String(now.getMinutes()).padStart(2, '0');
       const currentHHMM = `${currentHours}:${currentMins}`;
+      const hourNum = now.getHours();
 
+      let notifiedCache = {};
+      try {
+        notifiedCache = JSON.parse(
+          localStorage.getItem('habit_tracker_notified_reminders') || '{}'
+        );
+      } catch {
+        notifiedCache = {};
+      }
+
+      // 1. Check habits
       habits.forEach((habit) => {
-        if (!habit.reminderEnabled || !habit.reminderTime) return;
+        if (!habit.reminderEnabled) return;
 
-        if (habit.reminderTime === currentHHMM) {
-          const habitKey = `${habit._id || habit.id}_${todayStr}`;
-          let notifiedCache = {};
-          try {
-            notifiedCache = JSON.parse(
-              localStorage.getItem('habit_tracker_notified_reminders') || '{}'
-            );
-          } catch {
-            notifiedCache = {};
+        let shouldTrigger = false;
+        let triggerKey = '';
+
+        if (habit.reminderType === 'interval') {
+          const start = habit.reminderStartHour !== undefined ? habit.reminderStartHour : 8;
+          const end = habit.reminderEndHour !== undefined ? habit.reminderEndHour : 21;
+          const interval = habit.reminderIntervalHours || 2;
+
+          if (hourNum >= start && hourNum <= end) {
+            if (hourNum % Math.floor(interval) === 0) {
+              triggerKey = `${habit._id || habit.id}_${todayStr}_h${hourNum}`;
+              shouldTrigger = true;
+            }
           }
-
-          if (notifiedCache[habitKey]) return; // Already reminded today
-
-          // Don't remind if already completed or resting today
-          const isDone = isDateCompleted(habit, todayStr);
-          const isRest = isDateSkipped(habit, todayStr);
-          if (isDone || isRest) return;
-
-          // Mark reminded for today
-          notifiedCache[habitKey] = true;
-          localStorage.setItem(
-            'habit_tracker_notified_reminders',
-            JSON.stringify(notifiedCache)
-          );
-
-          // 1. Fire Browser Desktop Notification
-          sendDesktopNotification(`Habit Reminder: ${habit.title}`, {
-            body:
-              habit.description ||
-              `It's ${formatTime12Hour(habit.reminderTime)}! Time to check in.`,
-          });
-
-          // 2. Fire In-App Toast
-          setActiveNotification({
-            habit,
-            habitTitle: habit.title,
-            time: formatTime12Hour(habit.reminderTime),
-            message:
-              habit.description ||
-              'Time to stay consistent and complete your scheduled habit!',
-          });
+        } else if (habit.reminderTime && habit.reminderTime === currentHHMM) {
+          triggerKey = `${habit._id || habit.id}_${todayStr}`;
+          shouldTrigger = true;
         }
+
+        if (!shouldTrigger || !triggerKey || notifiedCache[triggerKey]) return;
+
+        // Don't remind if already completed or resting today (for fixed daily tasks)
+        const isDone = isDateCompleted(habit, todayStr);
+        const isRest = isDateSkipped(habit, todayStr);
+        if (habit.reminderType !== 'interval' && (isDone || isRest)) return;
+
+        // Mark reminded
+        notifiedCache[triggerKey] = true;
+        localStorage.setItem(
+          'habit_tracker_notified_reminders',
+          JSON.stringify(notifiedCache)
+        );
+
+        const isHydration = habit.reminderCategory === 'hydration';
+        const isWalk = habit.reminderCategory === 'walk';
+
+        const notifTitle = isHydration
+          ? `💧 Hydration Nudge: ${habit.title}`
+          : isWalk
+          ? `🚶 Walk Break: ${habit.title}`
+          : `Habit Reminder: ${habit.title}`;
+
+        const notifBody = isHydration
+          ? habit.description || 'Time to drink a glass of water (250ml) and stay hydrated!'
+          : isWalk
+          ? habit.description || 'Stand up, stretch, and take a quick 5-min walk break!'
+          : habit.description || `It's time to check in!`;
+
+        // Fire Notifications
+        sendDesktopNotification(notifTitle, { body: notifBody });
+        setActiveNotification({
+          habit,
+          type: habit.reminderCategory || 'custom',
+          reminderCategory: habit.reminderCategory || 'custom',
+          habitTitle: habit.title,
+          time:
+            habit.reminderType === 'interval'
+              ? `Every ${habit.reminderIntervalHours || 2}h`
+              : formatTime12Hour(habit.reminderTime),
+          message: notifBody,
+        });
+      });
+
+      // 2. Check Goal Plans
+      (goals || []).forEach((goal) => {
+        if (!goal.reminderEnabled) return;
+
+        let shouldTrigger = false;
+        let triggerKey = '';
+
+        if (goal.reminderType === 'interval') {
+          const start = goal.reminderStartHour !== undefined ? goal.reminderStartHour : 8;
+          const end = goal.reminderEndHour !== undefined ? goal.reminderEndHour : 21;
+          const interval = goal.reminderIntervalHours || 2;
+
+          if (hourNum >= start && hourNum <= end) {
+            if (hourNum % Math.floor(interval) === 0) {
+              triggerKey = `goal_${goal._id || goal.id}_${todayStr}_h${hourNum}`;
+              shouldTrigger = true;
+            }
+          }
+        } else if (goal.reminderTime && goal.reminderTime === currentHHMM) {
+          triggerKey = `goal_${goal._id || goal.id}_${todayStr}`;
+          shouldTrigger = true;
+        }
+
+        if (!shouldTrigger || !triggerKey || notifiedCache[triggerKey]) return;
+
+        notifiedCache[triggerKey] = true;
+        localStorage.setItem(
+          'habit_tracker_notified_reminders',
+          JSON.stringify(notifiedCache)
+        );
+
+        const isHydration = goal.reminderCategory === 'hydration';
+        const isWalk = goal.reminderCategory === 'walk';
+
+        const notifTitle = isHydration
+          ? `💧 Hydration Nudge: Drink Water!`
+          : isWalk
+          ? `🚶 Walk Break: Time to Move!`
+          : `Goal Reminder: ${goal.title}`;
+
+        const notifBody = isHydration
+          ? `Stay hydrated for your "${goal.title}" plan: Drink a glass of water now!`
+          : isWalk
+          ? `Movement break for "${goal.title}": Get up and take 250 steps!`
+          : `Time to execute daily routine habits for "${goal.title}".`;
+
+        sendDesktopNotification(notifTitle, { body: notifBody });
+        setActiveNotification({
+          type: goal.reminderCategory || 'custom',
+          reminderCategory: goal.reminderCategory || 'custom',
+          habitTitle: goal.title,
+          time:
+            goal.reminderType === 'interval'
+              ? `Every ${goal.reminderIntervalHours || 2}h`
+              : formatTime12Hour(goal.reminderTime),
+          message: notifBody,
+        });
       });
     };
 
     checkScheduledReminders();
     const intervalId = setInterval(checkScheduledReminders, 25000);
     return () => clearInterval(intervalId);
-  }, [habits, todayStr]);
+  }, [habits, goals, todayStr]);
 
   // Fetch habits from backend API
   const fetchHabits = useCallback(async () => {

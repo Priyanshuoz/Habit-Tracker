@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, X, AlertCircle, RefreshCw, Bell, Clock } from 'lucide-react';
+import { Sparkles, X, AlertCircle, RefreshCw, Bell, Clock, Droplets, Footprints } from 'lucide-react';
 import {
   requestNotificationPermission,
   sendDesktopNotification,
@@ -15,8 +15,26 @@ export const HABIT_TEMPLATES = [
     color: 'cyan',
     targetDays: 7,
     reminderEnabled: true,
+    reminderType: 'interval',
+    reminderCategory: 'hydration',
+    reminderIntervalHours: 2,
     reminderTime: '09:00',
     icon: '💧',
+  },
+  {
+    id: 'tmpl_walk',
+    title: 'Hourly Walking & Posture Break',
+    description: 'Step away from the screen for 5 minutes and take 250 steps every hour.',
+    category: 'Health',
+    frequency: 'daily',
+    color: 'emerald',
+    targetDays: 7,
+    reminderEnabled: true,
+    reminderType: 'interval',
+    reminderCategory: 'walk',
+    reminderIntervalHours: 1,
+    reminderTime: '10:00',
+    icon: '🚶',
   },
   {
     id: 'tmpl_workout',
@@ -27,6 +45,9 @@ export const HABIT_TEMPLATES = [
     color: 'emerald',
     targetDays: 6,
     reminderEnabled: true,
+    reminderType: 'daily',
+    reminderCategory: 'custom',
+    reminderIntervalHours: 2,
     reminderTime: '07:30',
     icon: '🏃',
   },
@@ -39,6 +60,9 @@ export const HABIT_TEMPLATES = [
     color: 'indigo',
     targetDays: 7,
     reminderEnabled: true,
+    reminderType: 'daily',
+    reminderCategory: 'custom',
+    reminderIntervalHours: 2,
     reminderTime: '21:30',
     icon: '📖',
   },
@@ -51,6 +75,9 @@ export const HABIT_TEMPLATES = [
     color: 'purple',
     targetDays: 7,
     reminderEnabled: true,
+    reminderType: 'daily',
+    reminderCategory: 'custom',
+    reminderIntervalHours: 2,
     reminderTime: '22:00',
     icon: '🧘',
   },
@@ -73,6 +100,11 @@ const HabitModal = ({
     targetDays: 7,
     reminderEnabled: false,
     reminderTime: '09:00',
+    reminderType: 'daily',
+    reminderCategory: 'custom',
+    reminderIntervalHours: 2,
+    reminderStartHour: 8,
+    reminderEndHour: 21,
   });
 
   useEffect(() => {
@@ -86,6 +118,11 @@ const HabitModal = ({
         targetDays: initialData.targetDays || 7,
         reminderEnabled: Boolean(initialData.reminderEnabled),
         reminderTime: initialData.reminderTime || '09:00',
+        reminderType: initialData.reminderType || 'daily',
+        reminderCategory: initialData.reminderCategory || 'custom',
+        reminderIntervalHours: Number(initialData.reminderIntervalHours) || 2,
+        reminderStartHour: Number(initialData.reminderStartHour) || 8,
+        reminderEndHour: Number(initialData.reminderEndHour) || 21,
       });
     } else {
       setFormData({
@@ -97,6 +134,11 @@ const HabitModal = ({
         targetDays: 7,
         reminderEnabled: false,
         reminderTime: '09:00',
+        reminderType: 'daily',
+        reminderCategory: 'custom',
+        reminderIntervalHours: 2,
+        reminderStartHour: 8,
+        reminderEndHour: 21,
       });
     }
   }, [initialData, isOpen]);
@@ -166,6 +208,11 @@ const HabitModal = ({
                         targetDays: tmpl.targetDays,
                         reminderEnabled: tmpl.reminderEnabled,
                         reminderTime: tmpl.reminderTime,
+                        reminderType: tmpl.reminderType || 'daily',
+                        reminderCategory: tmpl.reminderCategory || 'custom',
+                        reminderIntervalHours: tmpl.reminderIntervalHours || 2,
+                        reminderStartHour: 8,
+                        reminderEndHour: 21,
                       });
                     }}
                     className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-start gap-2.5 ${
@@ -260,25 +307,35 @@ const HabitModal = ({
             </div>
           </div>
 
-          {/* Daily Reminder Settings Section */}
+          {/* Daily & Interval Reminder Settings Section */}
           <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                     formData.reminderEnabled
-                      ? 'bg-amber-500/20 text-amber-400'
+                      ? formData.reminderCategory === 'hydration'
+                        ? 'bg-cyan-500/20 text-cyan-400'
+                        : formData.reminderCategory === 'walk'
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-amber-500/20 text-amber-400'
                       : 'bg-slate-800 text-slate-500'
                   }`}
                 >
-                  <Bell className="w-4 h-4" />
+                  {formData.reminderCategory === 'hydration' ? (
+                    <Droplets className="w-4 h-4" />
+                  ) : formData.reminderCategory === 'walk' ? (
+                    <Footprints className="w-4 h-4" />
+                  ) : (
+                    <Bell className="w-4 h-4" />
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-200 block">
-                    Daily Task Reminder
+                    Task Reminder & Recurring Nudges
                   </label>
                   <p className="text-[11px] text-slate-400">
-                    Get desktop and in-app notifications at your set time
+                    Hydration, walk breaks, or specific scheduled times
                   </p>
                 </div>
               </div>
@@ -303,40 +360,148 @@ const HabitModal = ({
               </button>
             </div>
 
-            {/* Time Picker & Test Alert (Shown when enabled) */}
+            {/* Reminder Details (Shown when enabled) */}
             {formData.reminderEnabled && (
-              <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs text-slate-300 font-medium">
-                    Reminder Time:
+              <div className="pt-2 border-t border-slate-800/80 space-y-3 animate-in fade-in duration-200">
+                {/* Style & Preset Buttons */}
+                <div>
+                  <span className="text-[11px] font-medium text-slate-400 block mb-1.5">
+                    Reminder Style:
                   </span>
-                  <input
-                    type="time"
-                    value={formData.reminderTime || '09:00'}
-                    onChange={(e) =>
-                      setFormData({ ...formData, reminderTime: e.target.value })
-                    }
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          reminderCategory: 'hydration',
+                          reminderType: 'interval',
+                          reminderIntervalHours: 2,
+                        }))
+                      }
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        formData.reminderCategory === 'hydration'
+                          ? 'bg-cyan-500/10 border-cyan-500 text-cyan-300'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Hydration Nudge</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Every 1-2 hours</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          reminderCategory: 'walk',
+                          reminderType: 'interval',
+                          reminderIntervalHours: 1,
+                        }))
+                      }
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        formData.reminderCategory === 'walk'
+                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Footprints className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Walk / Steps</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Every 1 hour</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          reminderCategory: 'custom',
+                          reminderType: 'daily',
+                        }))
+                      }
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                        formData.reminderCategory === 'custom'
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-300'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Fixed Time</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Daily alarm</p>
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await requestNotificationPermission();
-                    sendDesktopNotification(
-                      `Reminder: ${formData.title || 'Your Habit'}`,
-                      {
-                        body: `Scheduled for ${formData.reminderTime || '09:00'}. Notification test successful!`,
-                      }
-                    );
-                  }}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer self-start sm:self-auto"
-                >
-                  <Bell className="w-3 h-3" />
-                  <span>Test Alert</span>
-                </button>
+                {/* Sub-controls based on Type */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+                  {formData.reminderType === 'interval' ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-slate-300 font-medium">Frequency:</span>
+                      <select
+                        value={formData.reminderIntervalHours || 2}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            reminderIntervalHours: Number(e.target.value),
+                          })
+                        }
+                        className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                      >
+                        <option value={1}>Every 1 Hour (Intensive)</option>
+                        <option value={1.5}>Every 1.5 Hours</option>
+                        <option value={2}>Every 2 Hours (Recommended)</option>
+                        <option value={3}>Every 3 Hours</option>
+                        <option value={4}>Every 4 Hours</option>
+                      </select>
+                      <span className="text-[11px] text-slate-500">During active daytime</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs text-slate-300 font-medium">Time:</span>
+                      <input
+                        type="time"
+                        value={formData.reminderTime || '09:00'}
+                        onChange={(e) =>
+                          setFormData({ ...formData, reminderTime: e.target.value })
+                        }
+                        className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await requestNotificationPermission();
+                      const nudgeTitle =
+                        formData.reminderCategory === 'hydration'
+                          ? '💧 Hydration Nudge: Drink Water!'
+                          : formData.reminderCategory === 'walk'
+                          ? '🚶 Walk Break: Time to Move!'
+                          : `Reminder: ${formData.title || 'Your Habit'}`;
+                      const nudgeBody =
+                        formData.reminderCategory === 'hydration'
+                          ? 'Drink a glass of water (250ml) to hit your daily hydration target.'
+                          : formData.reminderCategory === 'walk'
+                          ? 'Stand up, stretch and take a 5-minute walk (250 steps)!'
+                          : `Scheduled check-in for ${formData.title || 'habit'}.`;
+
+                      sendDesktopNotification(nudgeTitle, { body: nudgeBody });
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    <Bell className="w-3 h-3" />
+                    <span>Test Nudge Alert</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

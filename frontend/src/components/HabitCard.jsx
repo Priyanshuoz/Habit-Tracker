@@ -8,6 +8,8 @@ import {
   Trash2,
   PieChart,
   Bell,
+  Droplets,
+  Footprints,
 } from 'lucide-react';
 import {
   calculateStreak,
@@ -109,14 +111,34 @@ const HabitCard = ({
                 </span>
               )}
 
-              {/* Scheduled Reminder Badge */}
-              {habit.reminderEnabled && habit.reminderTime && (
+              {/* Scheduled / Interval Reminder Badge */}
+              {habit.reminderEnabled && (
                 <span
-                  className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1 font-medium"
-                  title={`Daily reminder scheduled at ${formatTime12Hour(habit.reminderTime)}`}
+                  className={`text-xs px-2.5 py-0.5 rounded-full border flex items-center gap-1 font-medium ${
+                    habit.reminderCategory === 'hydration'
+                      ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20'
+                      : habit.reminderCategory === 'walk'
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                  }`}
+                  title={
+                    habit.reminderType === 'interval'
+                      ? `Interval reminder active: every ${habit.reminderIntervalHours || 2} hours`
+                      : `Daily reminder scheduled at ${formatTime12Hour(habit.reminderTime)}`
+                  }
                 >
-                  <Bell className="w-3 h-3 text-amber-400" />
-                  <span>{formatTime12Hour(habit.reminderTime)}</span>
+                  {habit.reminderCategory === 'hydration' ? (
+                    <Droplets className="w-3 h-3 text-cyan-400" />
+                  ) : habit.reminderCategory === 'walk' ? (
+                    <Footprints className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Bell className="w-3 h-3 text-amber-400" />
+                  )}
+                  <span>
+                    {habit.reminderType === 'interval'
+                      ? `Every ${habit.reminderIntervalHours || 2}h`
+                      : formatTime12Hour(habit.reminderTime)}
+                  </span>
                 </span>
               )}
             </div>

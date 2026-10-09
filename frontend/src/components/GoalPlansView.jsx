@@ -15,6 +15,10 @@ import {
   ChevronRight,
   Info,
   PieChart as PieChartIcon,
+  Bell,
+  Droplets,
+  Footprints,
+  Clock,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -25,6 +29,11 @@ import {
   Legend,
 } from 'recharts';
 import { getLocalDateString } from '../utils/habitUtils';
+import {
+  requestNotificationPermission,
+  sendDesktopNotification,
+  formatTime12Hour,
+} from '../utils/notificationUtils';
 
 const COLOR_MAP = {
   emerald: {
@@ -88,6 +97,50 @@ const GoalPlansView = ({
       day: 'numeric',
     });
   }, []);
+
+  // Quick Daily Hydration & Walk Nudges Tracker
+  const [waterGlasses, setWaterGlasses] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`habit_tracker_water_${todayStr}`);
+      return saved ? Number(saved) : 4;
+    } catch {
+      return 4;
+    }
+  });
+
+  const [walkBreaks, setWalkBreaks] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`habit_tracker_walks_${todayStr}`);
+      return saved ? Number(saved) : 3;
+    } catch {
+      return 3;
+    }
+  });
+
+  const [hydrationInterval, setHydrationInterval] = useState(2);
+  const [walkInterval, setWalkInterval] = useState(1);
+  const [hydrationActive, setHydrationActive] = useState(true);
+  const [walkActive, setWalkActive] = useState(true);
+
+  const handleDrinkWater = () => {
+    const next = waterGlasses + 1;
+    setWaterGlasses(next);
+    try {
+      localStorage.setItem(`habit_tracker_water_${todayStr}`, String(next));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleLogWalk = () => {
+    const next = walkBreaks + 1;
+    setWalkBreaks(next);
+    try {
+      localStorage.setItem(`habit_tracker_walks_${todayStr}`, String(next));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Filter goals
   const filteredGoals = useMemo(() => {
@@ -402,6 +455,199 @@ const GoalPlansView = ({
         )}
       </div>
 
+      {/* Smart Health & Routine Reminders Widget (Hydration & Walk Nudges) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card 1: Hydration Reminder */}
+        <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
+                  <Droplets className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Smart Hydration Reminder</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      Every {hydrationInterval}h
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Stay energized & hit 2.5L+ daily water intake
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Toggle */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const next = !hydrationActive;
+                  setHydrationActive(next);
+                  if (next) await requestNotificationPermission();
+                }}
+                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                  hydrationActive ? 'bg-cyan-600 justify-end' : 'bg-slate-800 justify-start'
+                }`}
+              >
+                <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+              </button>
+            </div>
+
+            {/* Quick Water Progress */}
+            <div className="p-3 bg-slate-950/60 rounded-2xl border border-slate-800/80 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] text-slate-400 block font-medium">Today's Intake:</span>
+                <span className="text-base font-extrabold text-white">
+                  {waterGlasses} / 8 <span className="text-xs font-normal text-slate-400">glasses (~{waterGlasses * 250}ml)</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDrinkWater}
+                  className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/30 cursor-pointer transition-all active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+1 Glass (💧)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await requestNotificationPermission();
+                    sendDesktopNotification('💧 Hydration Nudge: Drink Water!', {
+                      body: 'It’s time to hydrate! Drink a glass of water (250ml) to hit your daily goal.',
+                    });
+                  }}
+                  title="Test hydration desktop alert"
+                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700"
+                >
+                  <Bell className="w-3.5 h-3.5 text-cyan-400" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-800/60 text-[11px] text-slate-400">
+            <span>Interval frequency:</span>
+            <div className="flex items-center gap-1">
+              {[1, 1.5, 2, 3].map((hr) => (
+                <button
+                  key={hr}
+                  type="button"
+                  onClick={() => setHydrationInterval(hr)}
+                  className={`px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                    hydrationInterval === hr
+                      ? 'bg-cyan-500 text-slate-950 font-bold'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-400'
+                  }`}
+                >
+                  {hr}h
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Walk & Movement Reminder */}
+        <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                  <Footprints className="w-5 h-5 animate-bounce" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Walk & Movement Reminder</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Every {walkInterval}h
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Break up long sitting with 250 steps / hourly stretch
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Toggle */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const next = !walkActive;
+                  setWalkActive(next);
+                  if (next) await requestNotificationPermission();
+                }}
+                className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                  walkActive ? 'bg-emerald-600 justify-end' : 'bg-slate-800 justify-start'
+                }`}
+              >
+                <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+              </button>
+            </div>
+
+            {/* Quick Walk Progress */}
+            <div className="p-3 bg-slate-950/60 rounded-2xl border border-slate-800/80 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] text-slate-400 block font-medium">Walk Breaks:</span>
+                <span className="text-base font-extrabold text-white">
+                  {walkBreaks} / 6 <span className="text-xs font-normal text-slate-400">breaks logged (~{walkBreaks * 250} steps)</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleLogWalk}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/30 cursor-pointer transition-all active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+1 Walk (🚶)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await requestNotificationPermission();
+                    sendDesktopNotification('🚶 Walk Break: Time to Move!', {
+                      body: 'Get up and take a quick 5-minute walk (250 steps) to stretch and recharge!',
+                    });
+                  }}
+                  title="Test walking break desktop alert"
+                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700"
+                >
+                  <Bell className="w-3.5 h-3.5 text-emerald-400" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-800/60 text-[11px] text-slate-400">
+            <span>Interval frequency:</span>
+            <div className="flex items-center gap-1">
+              {[0.75, 1, 1.5, 2].map((hr) => (
+                <button
+                  key={hr}
+                  type="button"
+                  onClick={() => setWalkInterval(hr)}
+                  className={`px-2 py-0.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                    walkInterval === hr
+                      ? 'bg-emerald-500 text-slate-950 font-bold'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-400'
+                  }`}
+                >
+                  {hr === 0.75 ? '45m' : `${hr}h`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Action Header & Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Category Pill Filters */}
@@ -493,6 +739,35 @@ const GoalPlansView = ({
                           <span className="text-[10px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {goal.targetDate}
+                          </span>
+                        )}
+                        {goal.reminderEnabled && (
+                          <span
+                            className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+                              goal.reminderCategory === 'hydration'
+                                ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20'
+                                : goal.reminderCategory === 'walk'
+                                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                            }`}
+                            title={
+                              goal.reminderType === 'interval'
+                                ? `Active interval reminder: every ${goal.reminderIntervalHours || 2} hours`
+                                : `Daily reminder at ${formatTime12Hour(goal.reminderTime)}`
+                            }
+                          >
+                            {goal.reminderCategory === 'hydration' ? (
+                              <Droplets className="w-3 h-3 text-cyan-400" />
+                            ) : goal.reminderCategory === 'walk' ? (
+                              <Footprints className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Bell className="w-3 h-3 text-amber-400" />
+                            )}
+                            <span>
+                              {goal.reminderType === 'interval'
+                                ? `${goal.reminderCategory === 'hydration' ? 'Hydration' : goal.reminderCategory === 'walk' ? 'Walk' : 'Nudge'}: Every ${goal.reminderIntervalHours || 2}h`
+                                : `Daily: ${formatTime12Hour(goal.reminderTime)}`}
+                            </span>
                           </span>
                         )}
                       </div>
@@ -656,10 +931,37 @@ const GoalPlansView = ({
 
                 {/* Footer badge */}
                 <div className="px-6 py-3 bg-slate-950/60 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Dedicated Goal Monitor</span>
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Dedicated Goal Monitor</span>
+                    </span>
+                    {goal.reminderEnabled && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await requestNotificationPermission();
+                          const nudgeTitle =
+                            goal.reminderCategory === 'hydration'
+                              ? '💧 Hydration Nudge: Drink Water!'
+                              : goal.reminderCategory === 'walk'
+                              ? '🚶 Walk Break: Time to Move!'
+                              : `Goal Reminder: ${goal.title}`;
+                          const nudgeBody =
+                            goal.reminderCategory === 'hydration'
+                              ? `Drink a glass of water to keep on track for "${goal.title}".`
+                              : goal.reminderCategory === 'walk'
+                              ? `Take a quick 5-min walk / step break for "${goal.title}".`
+                              : `Time to execute daily habits for "${goal.title}".`;
+                          sendDesktopNotification(nudgeTitle, { body: nudgeBody });
+                        }}
+                        className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Bell className="w-3 h-3" />
+                        <span>Test Alert</span>
+                      </button>
+                    )}
+                  </div>
                   <span>{habits.length} habits configured</span>
                 </div>
               </div>

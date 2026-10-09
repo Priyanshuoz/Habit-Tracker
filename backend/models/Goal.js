@@ -77,6 +77,36 @@ const goalSchema = new mongoose.Schema(
       enum: ['active', 'completed', 'paused'],
       default: 'active',
     },
+    reminderEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    reminderType: {
+      type: String,
+      enum: ['daily', 'interval'],
+      default: 'interval',
+    },
+    reminderCategory: {
+      type: String,
+      enum: ['custom', 'hydration', 'walk'],
+      default: 'hydration',
+    },
+    reminderTime: {
+      type: String,
+      default: '09:00',
+    },
+    reminderIntervalHours: {
+      type: Number,
+      default: 2,
+    },
+    reminderStartHour: {
+      type: Number,
+      default: 8,
+    },
+    reminderEndHour: {
+      type: Number,
+      default: 21,
+    },
   },
   {
     timestamps: true,
