@@ -756,7 +756,12 @@ const Dashboard = () => {
         </div>
 
         {/* Modular Analytics Chart */}
-        <AnalyticsChart chartData={chartData} />
+        <AnalyticsChart
+          habits={habits}
+          goals={goals}
+          todayStr={todayStr}
+          chartData={chartData}
+        />
 
         {/* Modular Filter and Search Bar */}
         <HabitFilterBar
