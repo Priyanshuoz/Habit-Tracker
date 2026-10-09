@@ -18,6 +18,9 @@ import {
   Sparkles,
   KeyRound,
   RotateCcw,
+  Award,
+  Trophy,
+  Zap,
 } from 'lucide-react';
 import vaultApi from '../services/vaultApi';
 import { SAMPLE_AVATARS } from '../utils/avatarUtils';
@@ -28,6 +31,8 @@ const ProfileVaultModal = ({
   currentUser,
   onUpdateUser,
   initialTab = 'profile',
+  gamificationData,
+  onOpenAchievements,
 }) => {
   const [activeTab, setActiveTab] = useState(initialTab); // 'profile' | 'vault'
 
@@ -404,6 +409,43 @@ const ProfileVaultModal = ({
                 <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
                   <span>{profileError}</span>
+                </div>
+              )}
+
+              {/* Gamification Status Card in Profile Tab */}
+              {gamificationData && (
+                <div className={`p-4 rounded-2xl bg-slate-950 border ${gamificationData.currentTier.borderClass} flex items-center justify-between gap-3 shadow-md`}>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center p-1 bg-slate-900 border border-white/10"
+                      style={{ color: gamificationData.currentTier.color }}
+                    >
+                      <Award className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${gamificationData.currentTier.pillBg}`}>
+                          {gamificationData.currentTier.label} TIER
+                        </span>
+                        <span className="text-[10px] font-bold text-white bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                          Lv.{gamificationData.currentLevel}
+                        </span>
+                      </div>
+                      <h4 className="text-xs font-bold text-white mt-0.5">
+                        {gamificationData.levelTitle} • {gamificationData.totalXp} XP
+                      </h4>
+                    </div>
+                  </div>
+
+                  {onOpenAchievements && (
+                    <button
+                      type="button"
+                      onClick={onOpenAchievements}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      Badges ({gamificationData.unlockedBadgesCount})
+                    </button>
+                  )}
                 </div>
               )}
 

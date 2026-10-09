@@ -13,6 +13,10 @@ import {
   Zap,
   Award,
   Quote,
+  Shield,
+  Trophy,
+  Gem,
+  Crown,
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
@@ -27,6 +31,7 @@ import NotificationToast from '../components/NotificationToast';
 import ProfileVaultModal from '../components/ProfileVaultModal';
 import GoalPlansView from '../components/GoalPlansView';
 import GoalModal from '../components/GoalModal';
+import AchievementsModal from '../components/AchievementsModal';
 
 import { habitApi } from '../services/habitApi';
 import { goalApi } from '../services/goalApi';
@@ -43,6 +48,7 @@ import {
   sendDesktopNotification,
   formatTime12Hour,
 } from '../utils/notificationUtils';
+import { calculateUserGamification } from '../utils/gamificationUtils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -109,6 +115,37 @@ const Dashboard = () => {
   // Date constants
   const past7Days = useMemo(() => getPastNDays(7), []);
   const todayStr = useMemo(() => getLocalDateString(new Date()), []);
+
+  // Achievements & Tier Gamification Modal State
+  const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
+
+  // Quick Daily Hydration & Walk Nudges Tracker for Wellness Badges
+  const [waterGlasses, setWaterGlasses] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`habit_tracker_water_${todayStr}`);
+      return saved ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const [walkBreaks, setWalkBreaks] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`habit_tracker_walks_${todayStr}`);
+      return saved ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // Calculate full Gamification state: Tiers (Bronze, Silver, Gold, Platinum, Diamond, Mythic), Levels, Badges & XP
+  const gamificationData = useMemo(() => {
+    return calculateUserGamification(habits, goals, todayStr, {
+      waterGlasses,
+      walkBreaks,
+      user: currentUser,
+    });
+  }, [habits, goals, todayStr, waterGlasses, walkBreaks, currentUser]);
 
   // Daily Motivational Quote (automatically rotates with calendar date)
   const dailyQuote = useMemo(() => getDailyQuote(new Date()), []);
@@ -565,6 +602,8 @@ const Dashboard = () => {
       {/* Modular Navigation Bar */}
       <Navbar
         currentUser={currentUser}
+        gamificationData={gamificationData}
+        onOpenAchievements={() => setIsAchievementsModalOpen(true)}
         onNewHabit={() => {
           if (dashboardTab === 'goals') {
             setEditingGoal(null);
@@ -671,6 +710,8 @@ const Dashboard = () => {
         {dashboardTab === 'goals' ? (
           <GoalPlansView
             goals={goals}
+            gamificationData={gamificationData}
+            onOpenAchievements={() => setIsAchievementsModalOpen(true)}
             onNewGoal={() => {
               setEditingGoal(null);
               setIsGoalModalOpen(true);
@@ -709,6 +750,72 @@ const Dashboard = () => {
                   — {dailyQuote.author}
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tier Progress & Badges Showcase Strip on Habits View */}
+        {gamificationData && (
+          <div className={`p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border ${gamificationData.currentTier.borderClass} shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
+            <div className="flex items-center gap-3.5">
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center border ${gamificationData.currentTier.borderClass} ${gamificationData.currentTier.bgClass} shadow-md`}
+                style={{ color: gamificationData.currentTier.color }}
+              >
+                {gamificationData.currentTierKey === 'bronze' && <Shield className="w-6 h-6" />}
+                {gamificationData.currentTierKey === 'silver' && <Award className="w-6 h-6" />}
+                {gamificationData.currentTierKey === 'gold' && <Trophy className="w-6 h-6" />}
+                {gamificationData.currentTierKey === 'platinum' && <Sparkles className="w-6 h-6" />}
+                {gamificationData.currentTierKey === 'diamond' && <Gem className="w-6 h-6" />}
+                {gamificationData.currentTierKey === 'mythic' && <Crown className="w-6 h-6" />}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${gamificationData.currentTier.pillBg}`}>
+                    {gamificationData.currentTier.label} TIER • LEVEL {gamificationData.currentLevel}
+                  </span>
+                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                    <Zap className="w-3 h-3 fill-amber-400" />
+                    <span>{gamificationData.totalXp} XP</span>
+                  </span>
+                </div>
+                <h4 className="text-base font-black text-white mt-0.5">
+                  {gamificationData.levelTitle}
+                </h4>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
+                  <span>Next rank: <strong className="text-slate-300">{gamificationData.nextLevelTitle || 'Max Rank'}</strong></span>
+                  <span>•</span>
+                  <span>{gamificationData.xpRemaining} XP to level up</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="hidden md:block w-36 space-y-1">
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>Level Progress</span>
+                  <span className="font-bold text-white">{gamificationData.progressPercent}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${gamificationData.progressPercent}%`,
+                      backgroundColor: gamificationData.currentTier.color,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAchievementsModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-semibold shadow-sm transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>Badges ({gamificationData.unlockedBadgesCount}/{gamificationData.totalBadgesCount})</span>
+              </button>
             </div>
           </div>
         )}
@@ -903,6 +1010,11 @@ const Dashboard = () => {
         onClose={() => setIsProfileVaultOpen(false)}
         currentUser={currentUser}
         initialTab={profileVaultInitialTab}
+        gamificationData={gamificationData}
+        onOpenAchievements={() => {
+          setIsProfileVaultOpen(false);
+          setIsAchievementsModalOpen(true);
+        }}
         onUpdateUser={(updated) => {
           setCurrentUser(updated);
         }}
@@ -917,6 +1029,13 @@ const Dashboard = () => {
         }}
         onSave={handleSaveGoal}
         editingGoal={editingGoal}
+      />
+
+      {/* Achievements, Badges & Tier Progression Modal */}
+      <AchievementsModal
+        isOpen={isAchievementsModalOpen}
+        onClose={() => setIsAchievementsModalOpen(false)}
+        gamificationData={gamificationData}
       />
     </div>
   );

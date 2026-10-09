@@ -1,5 +1,27 @@
 import React from 'react';
-import { Flame, Plus, LogOut, Shield, Lock, Camera, Sparkles } from 'lucide-react';
+import {
+  Flame,
+  Plus,
+  LogOut,
+  Shield,
+  Lock,
+  Camera,
+  Sparkles,
+  Award,
+  Trophy,
+  Gem,
+  Crown,
+  Zap,
+} from 'lucide-react';
+
+const TIER_ICONS = {
+  bronze: Shield,
+  silver: Award,
+  gold: Trophy,
+  platinum: Sparkles,
+  diamond: Gem,
+  mythic: Crown,
+};
 
 const Navbar = ({
   currentUser,
@@ -7,6 +29,8 @@ const Navbar = ({
   onLogout,
   onOpenProfile,
   onOpenVault,
+  gamificationData,
+  onOpenAchievements,
 }) => {
   return (
     <header className="sticky top-0 z-30 w-full bg-slate-900/70 border-b border-slate-800/80 backdrop-blur-xl">
@@ -29,8 +53,51 @@ const Navbar = ({
           </div>
         </div>
 
-        {/* Right Actions: New Habit, Private Vault, User Avatar, Logout */}
+        {/* Right Actions: Level & Tier Pill, New Habit, Private Vault, User Avatar, Logout */}
         <div className="flex items-center gap-2 sm:gap-3">
+
+          {/* Level & Tier Badge Pill */}
+          {gamificationData && (() => {
+            const TierIcon = TIER_ICONS[gamificationData.currentTierKey] || Shield;
+            return (
+              <button
+                type="button"
+                onClick={onOpenAchievements}
+                title={`Rank: ${gamificationData.currentTier.name} Tier • Level ${gamificationData.currentLevel} (${gamificationData.levelTitle}) • Click to view Badges & Tier progression`}
+                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border ${gamificationData.currentTier.borderClass} ${gamificationData.currentTier.bgClass} hover:brightness-110 shadow-md ${gamificationData.currentTier.glowColor} transition-all cursor-pointer group`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center p-1 bg-slate-950/70 border border-white/10"
+                  style={{ color: gamificationData.currentTier.color }}
+                >
+                  <TierIcon className="w-4 h-4" />
+                </div>
+                <div className="text-left hidden xs:block">
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${gamificationData.currentTier.accentText}`}>
+                      {gamificationData.currentTier.name}
+                    </span>
+                    <span className="text-[9px] font-extrabold text-white bg-slate-950/80 px-1 py-0.2 rounded border border-slate-800">
+                      Lv.{gamificationData.currentLevel}
+                    </span>
+                  </div>
+                  <div className="w-12 sm:w-16 h-1 bg-slate-950 rounded-full overflow-hidden mt-0.5 border border-slate-800">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${gamificationData.progressPercent}%`,
+                        backgroundColor: gamificationData.currentTier.color,
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="hidden md:flex items-center gap-0.5 text-[10px] font-bold text-amber-400 pl-0.5">
+                  <Zap className="w-2.5 h-2.5 fill-amber-400" />
+                  <span>{gamificationData.totalXp}</span>
+                </div>
+              </button>
+            );
+          })()}
 
           {/* New Habit CTA */}
           <button

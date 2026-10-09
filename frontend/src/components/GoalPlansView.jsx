@@ -19,6 +19,12 @@ import {
   Droplets,
   Footprints,
   Clock,
+  Shield,
+  Trophy,
+  Gem,
+  Crown,
+  Lock,
+  Zap,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -86,6 +92,8 @@ const GoalPlansView = ({
   onEditGoal,
   onDeleteGoal,
   onToggleGoalHabit,
+  gamificationData,
+  onOpenAchievements,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [chartMode, setChartMode] = useState('status'); // 'status' | 'byPlan'
@@ -247,6 +255,122 @@ const GoalPlansView = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
+
+      {/* Gamification: Plan Following Tier Progression & Goal Badges Showcase */}
+      {gamificationData && (
+        <div className={`p-6 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border ${gamificationData.currentTier.borderClass} shadow-xl relative overflow-hidden`}>
+          {/* Ambient Glow */}
+          <div
+            className="absolute -top-16 -right-16 w-64 h-64 rounded-full blur-3xl opacity-20 pointer-events-none"
+            style={{ backgroundColor: gamificationData.currentTier.color }}
+          />
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+            {/* Left: Current Tier Rank & Level */}
+            <div className="flex items-center gap-4">
+              <div
+                className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 ${gamificationData.currentTier.borderClass} shadow-lg ${gamificationData.currentTier.glowColor}`}
+                style={{
+                  background: `radial-gradient(circle at top, ${gamificationData.currentTier.color}33, #020617 80%)`,
+                }}
+              >
+                {gamificationData.currentTierKey === 'bronze' && <Shield className={`w-8 h-8 ${gamificationData.currentTier.accentText}`} />}
+                {gamificationData.currentTierKey === 'silver' && <Award className={`w-8 h-8 ${gamificationData.currentTier.accentText}`} />}
+                {gamificationData.currentTierKey === 'gold' && <Trophy className={`w-8 h-8 ${gamificationData.currentTier.accentText}`} />}
+                {gamificationData.currentTierKey === 'platinum' && <Sparkles className={`w-8 h-8 ${gamificationData.currentTier.accentText}`} />}
+                {gamificationData.currentTierKey === 'diamond' && <Gem className={`w-8 h-8 ${gamificationData.currentTier.accentText}`} />}
+                {gamificationData.currentTierKey === 'mythic' && <Crown className={`w-8 h-8 ${gamificationData.currentTier.accentText}`} />}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${gamificationData.currentTier.pillBg}`}>
+                    {gamificationData.currentTier.label} TIER • LV. {gamificationData.currentLevel}
+                  </span>
+                  <span className="text-xs text-amber-400 font-bold flex items-center gap-1">
+                    <Zap className="w-3 h-3 fill-amber-400" />
+                    <span>{gamificationData.totalXp} XP</span>
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-white mt-0.5 tracking-tight">
+                  {gamificationData.levelTitle}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Follow plan habits daily to progress from Bronze → Silver → Gold → Platinum → Diamond
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Progress to Next Rank & Achievements Button */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:min-w-[340px]">
+              <div className="flex-1 bg-slate-950/70 p-3 rounded-2xl border border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">
+                    Next: <strong className="text-white">{gamificationData.nextLevelTitle || 'Max Rank'}</strong>
+                  </span>
+                  <span className="font-bold text-slate-300">
+                    {gamificationData.progressPercent}%
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${gamificationData.progressPercent}%`,
+                      backgroundColor: gamificationData.currentTier.color,
+                    }}
+                  />
+                </div>
+                <div className="text-[10px] text-slate-500 text-right">
+                  {gamificationData.xpRemaining} XP to level up
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onOpenAchievements}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+              >
+                <Award className="w-4 h-4 text-amber-300" />
+                <span>Badges ({gamificationData.unlockedBadgesCount}/{gamificationData.totalBadgesCount})</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Goal-Specific Badges Micro Bar */}
+          <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <span className="text-slate-400 font-medium flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Goal Milestones:</span>
+            </span>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {gamificationData.badges
+                .filter((b) => b.category === 'Goals')
+                .slice(0, 4)
+                .map((b) => (
+                  <div
+                    key={b.id}
+                    title={`${b.title}: ${b.description} (${b.progressText})`}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all ${
+                      b.unlocked
+                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                        : 'bg-slate-900/60 text-slate-500 border-slate-800'
+                    }`}
+                  >
+                    {b.unlocked ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    ) : (
+                      <Lock className="w-3 h-3 text-slate-500" />
+                    )}
+                    <span>{b.title}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
