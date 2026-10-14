@@ -4,6 +4,7 @@ const router = express.Router();
 const{
     getHabits,
     toggleHabit,
+    updateHabit,
     deleteHabit,
     createHabit,
 } = require('../controllers/habitController');
@@ -15,6 +16,7 @@ router.use(protect);
 router.get('/', getHabits);
 router.post('/', createHabit);
 
+router.put('/:id', updateHabit);
 router.put('/:id/toggle', toggleHabit);
 router.delete('/:id', deleteHabit);
 

@@ -72,12 +72,36 @@ const deleteHabit = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
+}
+const updateHabit = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, category } = req.body;
 
+        if (!title || !title.trim()) {
+            return res.status(400).json({ message: 'Habit title cannot be empty' });
+        }
+
+        const habit = await Habit.findOneAndUpdate(
+            { _id: id, user: req.user._id },
+            { $set: { title: title.trim(), category: category || 'General' } },
+            { new: true }
+        );
+
+        if (!habit) {
+            return res.status(404).json({ message: 'Habit not found' });
+        }
+
+        res.status(200).json(habit);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
 module.exports = {
     getHabits,
     createHabit,
+    updateHabit,
     toggleHabit,
     deleteHabit
-}
+};

@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 const habitSchema = new mongoose.Schema(
   {
-    //Link habit to the logged-in User
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
